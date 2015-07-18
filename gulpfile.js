@@ -14,6 +14,7 @@
     var batch = require('gulp-batch');
     var mocha = require('gulp-mocha');
     var jshint = require('gulp-jshint');
+    var betterConsole = require('better-console');
 
     var SOURCE_DIR = 'src';
     var DEST_DIR = 'dist';
@@ -62,6 +63,7 @@
 
     gulp.task('watch', function() {
         watch([SOURCE_JS_FILES, TEST_JS_FILES], batch(function(events, done) {
+            betterConsole.clear();
             gulp.start('test', done);
         }));   
     });
