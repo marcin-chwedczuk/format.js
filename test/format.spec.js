@@ -117,6 +117,14 @@
                 format('[%d]', { valueOf: constFn(123) })
                     .should.equal('[123]');
             });
+
+            it('ignores fraction part of number', function() {
+                format('[%d]', 3.141592)
+                    .should.equal('[3]');
+
+                format('[%d]', -3.21)
+                    .should.equal('[-3]');
+            });
         });
 
         describe('width specifier', function() {
