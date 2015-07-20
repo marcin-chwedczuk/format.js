@@ -122,7 +122,13 @@
                 format('[%d]', 3.141592)
                     .should.equal('[3]');
 
+                format('[%d]', 3.9)
+                    .should.equal('[3]');
+
                 format('[%d]', -3.21)
+                    .should.equal('[-3]');
+
+                format('[%d]', -3.7)
                     .should.equal('[-3]');
             });
         });
@@ -176,12 +182,93 @@
                 format('[%.1j]', { foo: 1 })
                     .should.equal('[{]');
             });
+
+            it('given %i and %d specifiers sets minimum number of digits in number ' + 
+               '(if number is too short it should be padded with zeros)', function() {
+                
+                format('[%.3d]', 1)
+                    .should.equal('[001]');
+
+                format('[%.3d]', 123)
+                    .should.equal('[123]');
+
+                format('[%.3i]', 1024)
+                    .should.equal('[1024]');
+
+                format('[%.3d]', -3)
+                    .should.equal('[-003]');
+
+                format('[%.3d]', -1234)
+                    .should.equal('[-1234]');
+            });
+
+            it('causes %i and %d specifiers to write nothing if precision is zero ' + 
+               'and argument is zero', function() {
+                
+                format('[%.0d]', 0)
+                    .should.equal('[]');
+
+                format('[%.0d]', 11)
+                    .should.equal('[11]');
+
+                format('[%.0i]', 0)
+                    .should.equal('[]');
+            });
+        });
+
+        describe('flags', function() {
+            it('plus flag causes positive numbers to be preceded by (+) sign', function() {
+                format('[%+d]', 3)
+                    .should.equal('[+3]');
+
+                format('[%+d]', -3)
+                    .should.equal('[-3]');
+
+                format('[%+d]', 0)
+                    .should.equal('[+0]');
+
+                // TODO: Add floating points
+            });
+
+            it('space flag causes space to be added before number if number has no sign', function() {
+                format('[% d]', 3)
+                    .should.equal('[ 3]');
+
+                format('[% d]', -3)
+                    .should.equal('[-3]');
+
+                format('[% d]', 0)
+                    .should.equal('[ 0]');
+            });
+
+            it('zero flag causes zeros to be used as padding in numbers when width is specified', 
+            function() {
+                format('[%03d]', 1)
+                    .should.equal('[001]');
+
+                format('[%05d]', -31)
+                    .should.equal('[-0031]');
+
+                format('[%05d]', 0)
+                    .should.equal('[00000]');
+            });
         });
 
         describe('integration tests', function() {
             it('allows to use complex specifiers', function() {
                 format('%5.3s', 'zzzkkkxxx')
                     .should.equal('  zzz');
+
+                format("%+.0d", 0)
+                    .should.equal('+');
+            });
+
+            it('allows to use many flags at once', function() {
+                format('%-+10.3d', 2)
+                    .should.equal('+002      ');
+
+                format('%-+10.3i', -2)
+                    .should.equal('-002      ');
             });
         });
 

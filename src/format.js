@@ -1,3 +1,4 @@
+/*jshint bitwise:false */
 
 (function(exports) {
     'use strict';
@@ -10,12 +11,14 @@
         return new Array(times + 1).join(s);
     };
     
-    var padLeft = function(s, width) {
+    var padLeft = function(s, width, padChar) {
+        padChar = padChar || ' ';
+
         if (s.length >= width) {
             return s;
         }
         else {
-            var padding = repeat(' ', width - s.length);
+            var padding = repeat(padChar, width - s.length);
             return padding + s;
         }
     };
@@ -34,147 +37,125 @@
         return flags && (flags.indexOf(flag) !== (-1));
     };
 
-    var unused = function() { };
-
-    var MissingSpecifierArgument = function() { };
-
-    var Formatter = function() {
-        var self = this;
-
-        self.isApplicable = function(specifier) {
-            unused(specifier);
-            throw new Error('should be implemented in subclass');
-        };
-
-        self.format = function(flags, width, precision, args, fullSpec) {
-            unused(flags, width, precision, args, fullSpec);
-            throw new Error('should be implemented in subclass');
-        };
-
-        self.assertHasArg = function(args) {
-            if (args.length < 1) {
-                throw new MissingSpecifierArgument();
-            }
-        };
-    };
-
-    var StringBasedSpecifierFormatter = function() {
-        var self = this;
-
-        Formatter.call(this);
-
-        self.getValue = function(args) {
-            self.assertHasArg(args);
-            return args.shift();
-        };
-
-        self.format = function(flags, width, precision, args) {
-            var result = String(self.getValue(args));
-
-            if (precision) {
-                result = result.substring(0, Number(precision));
-            }
-
-            if (width) {
-                var padFunction = (hasFlag(flags, '-') ? padRight : padLeft);
-                result = padFunction(result, Number(width));
-            }
-
-            return result;
-        };
-    };
-
-    var StringSpecifierFormatter = function() {
-        var self = this;
-
-        StringBasedSpecifierFormatter.call(self);
-
-        self.isApplicable = function(spec) {
-            return (spec === 's');
-        };
-    };
-
-    var ValueOfSpecifierFormatter = function() {
-        var self = this;
-
-        StringBasedSpecifierFormatter.call(self);
-
-        self.isApplicable = function(spec) {
-            return (spec === 'v');
-        };
-
-        self.getValue = function(args) {
-            var arg = args.shift();
-
-            if (arg && typeof(arg.valueOf) === "function") {
-                return arg.valueOf();
-            }
-            else {
-                return arg;
-            }
-        };
-    };
-
-    var JsonSpecifierFormatter = function() {
-        var self = this;
-
-        StringBasedSpecifierFormatter.call(self);
-
-        self.isApplicable = function(spec) {
-            return (spec === 'j');
-        };
-
-        self.getValue = function(args) {
-            return JSON.stringify(args.shift());
-        };
-    };
-
-    var IntegerSpecifierFormatter = function() {
-        var self = this;
-
-        StringBasedSpecifierFormatter.call(self);
-
-        self.isApplicable = function(spec) {
-            return (spec === 'd' || spec === 'i');
-        };
-        
-        self.getValue = function(args) {
-            var num = Number(args.shift());
-            return (isFinite(num) ? Math.round(num) : num);
-        };
-    };
-
-    var UnknownSpecifierFormatter = function() {
-        var self = this;
-
-        self.isApplicable = function() {
-            return true;
-        };
-
-        self.format = function(flags, width, precision, args, fullSpec) {
-            return fullSpec;
-        };
-    };
-
-    var FORMATTERS = [
-        new StringSpecifierFormatter(),
-        new ValueOfSpecifierFormatter(),
-        new JsonSpecifierFormatter(),
-        new IntegerSpecifierFormatter(),
-        new UnknownSpecifierFormatter()
-    ];
-
-    var getFormatter = function(spec) {
-        for (var i = 0; i < FORMATTERS.length; i += 1) {
-           var formatter = FORMATTERS[i];
-
-           if (formatter.isApplicable(spec)) {
-                return formatter;
-           }
+    var nextArg = function(args, fullSpecifier) {
+        if (!args.length) {
+            throwError('specifier: ' + fullSpecifier + 
+                       ' has no coresponding argument.');
         }
 
-        throw new Error('never comes here');
+        return args.shift();
     };
+
+    var numberOfCharsPrecision = function(formatted, precision) {
+        if (precision) {
+            return formatted.substring(0, Number(precision));
+        }
+        else {
+            return formatted;
+        }
+    };
+
+    var integerPrecision = function(formatted, precision) {
+        if (precision === null) {
+            return formatted;
+        }
+
+        var sign = (formatted[0] === '-' ? '-' : '');
+        formatted = formatted.substring(sign.length);
+
+        if (precision === 0) {
+            formatted = (formatted === '0' ? '' : formatted);
+        }
+        else {
+            formatted = padLeft(formatted, precision, '0');
+        }
+
+        return sign + formatted;
+    };
+
+    var integerDecorator = function(number, width, formatted, flags) {
+        if (hasFlag(flags, '+')) {
+            if (number >= 0) {
+                formatted = '+' + formatted;
+            }
+        }
+
+        if (width && hasFlag(flags, '0')) {
+            var sign = (/^[+ -]/.test(formatted) ? formatted[0] : '');
+            formatted = formatted.substring(sign.length);
+
+            formatted = padLeft(formatted, width - sign.length, '0');
+            formatted = sign + formatted;
+        }
+
+        if (hasFlag(flags, ' ')) {
+            if (formatted[0] !== '+' && formatted[0] !== '-') {
+                formatted = ' ' + formatted;
+            }
+        }
+
+        return formatted;
+    };
+
+    var formatSpecifier = function(next, flags, width, precision, spec) {
+        var arg, 
+            result,
+            precisionFunc,
+            decoratorFunc;
+
+        switch(spec) {
+        case 's':
+            result = String(next());
+            precisionFunc = numberOfCharsPrecision;
+            break;
+        
+        case 'v':
+            arg = next();
+
+            if (arg && typeof(arg.valueOf) === "function") {
+                result = String(arg.valueOf());
+            }
+            else {
+                result = String(arg);
+            }
+            precisionFunc = numberOfCharsPrecision;
+            break;
+
+        case 'j':
+            result = JSON.stringify(next());
+            precisionFunc = numberOfCharsPrecision;
+            break;
+
+        case 'i': case 'd':
+            arg = Number(next());
+            arg = (isFinite(arg) ? (arg | 0) : arg);
+            result = String(arg);
+
+            precisionFunc = integerPrecision;
+            decoratorFunc = integerDecorator.bind(null, arg, width);
+            break;
+
+        default:
+            // unknown specifier
+            return undefined;
+        }
+
+        if (precisionFunc) {
+            result = precisionFunc(result, precision);
+        }
+
+        if (decoratorFunc) {
+            result = decoratorFunc(result, flags);
+        }
+
+        if (width) {
+            var padFunction = (hasFlag(flags, '-') ? padRight : padLeft);
+            result = padFunction(result, width);
+        }
+
+        return result;
+    };
+
 
     exports.format = function(format) {
         if (typeof(format) !== "string") {
@@ -183,23 +164,20 @@
 
         var args = Array.prototype.slice.call(arguments, 1);
 
+        // create new regex each time to avoid problems with lastIndex property
+        
         // format: %[flags][width][.precision][length]specifier
         // based on: http://www.cplusplus.com/reference/cstdio/printf
-        return format.replace(/%([-])?(\d+|\*)?(?:\.(\d+))?([a-zA-Z])/g, 
-        function(match, flags, width, precision, spec) {
-            var formatter = getFormatter(spec);
+        var SPECIFIER_REGEX = /%([-+ 0]*)?(\d+|\*)?(?:\.(\d+))?([a-zA-Z])/g;
 
-            try {
-                return formatter.format(flags, width, precision, args, match);
-            }
-            catch(e) {
-                if (e instanceof MissingSpecifierArgument) {
-                     throwError('specifier: ' + match + 
-                                ' has no coresponding argument.');
-                }
+        return format.replace(SPECIFIER_REGEX, function(fullSpec, flags, width, precision, spec) {
+            width = (width ? Number(width) : null);
+            precision = (precision ? Number(precision) : null);
 
-                throw e;
-            }
+            var next = nextArg.bind(null, args, fullSpec);
+            var result = formatSpecifier(next, flags, width, precision, spec);
+
+            return (result === undefined ? fullSpec : result);
         });
     };
 
