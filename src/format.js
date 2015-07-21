@@ -47,7 +47,7 @@
     };
 
     var numberOfCharsPrecision = function(formatted, precision) {
-        if (precision) {
+        if (precision !== null) {
             return formatted.substring(0, Number(precision));
         }
         else {
@@ -97,11 +97,32 @@
         return formatted;
     };
 
+    var isWildcard = function(value) {
+        return (value === '*');
+    };
+
+    var toPositiveInteger = function(value) {
+        value = Number(value);
+
+        value = (!isFinite(value) ? 0 : value);
+        value = (value | 0);
+
+        return (value < 0 ? 0 : value);
+    };
+
     var formatSpecifier = function(next, flags, width, precision, spec) {
         var arg, 
             result,
             precisionFunc,
             decoratorFunc;
+
+        if (isWildcard(width)) {
+            width = toPositiveInteger(next());
+        }
+
+        if (isWildcard(precision)) {
+            precision = toPositiveInteger(next());
+        }
 
         switch(spec) {
         case 's':
@@ -156,6 +177,17 @@
         return result;
     };
 
+    var toWildcardOrNumber = function(value) {
+        if (!value) {
+            return null;
+        }
+
+        if (value.indexOf('*') !== (-1)) {
+            return '*';
+        }
+
+        return Number(value);
+    };
 
     exports.format = function(format) {
         if (typeof(format) !== "string") {
@@ -168,17 +200,24 @@
         
         // format: %[flags][width][.precision][length]specifier
         // based on: http://www.cplusplus.com/reference/cstdio/printf
-        var SPECIFIER_REGEX = /%([-+ 0]*)?(\d+|\*)?(?:\.(\d+))?([a-zA-Z])/g;
+        var SPECIFIER_REGEX = /%([-+ 0]*)?(\d+|\*)?(?:(\.)(\d+|\*)?)?([a-zA-Z])/g;
 
-        return format.replace(SPECIFIER_REGEX, function(fullSpec, flags, width, precision, spec) {
-            width = (width ? Number(width) : null);
-            precision = (precision ? Number(precision) : null);
+        return format.replace(SPECIFIER_REGEX, 
+            function(fullSpec, flags, width, dot, precision, spec) {
+                width = toWildcardOrNumber(width);
 
-            var next = nextArg.bind(null, args, fullSpec);
-            var result = formatSpecifier(next, flags, width, precision, spec);
+                if (dot && !precision) {
+                    precision = 0;
+                }
+                else {
+                    precision = toWildcardOrNumber(precision);
+                }
 
-            return (result === undefined ? fullSpec : result);
-        });
+                var next = nextArg.bind(null, args, fullSpec);
+                var result = formatSpecifier(next, flags, width, precision, spec);
+
+                return (result === undefined ? fullSpec : result);
+            });
     };
 
 }(this));

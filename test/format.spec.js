@@ -163,6 +163,17 @@
                 format('%-5s', 'mymymy')
                     .should.equal('mymymy');
             });
+
+            it('allows to pass width as argument preceding specifier argument', function() {
+                format('%*s', 3, 'foo')
+                    .should.equal('foo');
+
+                format('%*s', 1, 'foo')
+                    .should.equal('foo');
+
+                format('%*s', 5, 'foo')
+                    .should.equal('  foo');
+            });
         });
 
         describe('precision specifier', function() {
@@ -214,6 +225,28 @@
                 format('[%.0i]', 0)
                     .should.equal('[]');
             });
+
+            it('allows to pass precision as argument preceding specifier argument', function() {
+                format('[%.*s]', 3, 'foozble')
+                    .should.equal('[foo]');
+
+                format('[%.*s]', 7, 'foozble')
+                    .should.equal('[foozble]');
+
+                format('[%.*d]', 3, 3)
+                    .should.equal('[003]');
+            });
+
+            it('assumes that precision is zero when no number is specified after dot', function() {
+                format('[%.s]', 'foo')
+                    .should.equal('[]');
+
+                format('[%.d]', 0)
+                    .should.equal('[]');
+
+                format('[%.d]', 123)
+                    .should.equal('[123]');
+            });
         });
 
         describe('flags', function() {
@@ -259,8 +292,11 @@
                 format('%5.3s', 'zzzkkkxxx')
                     .should.equal('  zzz');
 
-                format("%+.0d", 0)
+                format('%+.0d', 0)
                     .should.equal('+');
+
+                format('[%+ d]', 0)
+                    .should.equal('[+0]');
             });
 
             it('allows to use many flags at once', function() {
