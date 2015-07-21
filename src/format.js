@@ -192,8 +192,8 @@
             precisionFunc = numberOfCharsPrecision;
             break;
 
-        case 'i': case 'd':
-            arg = toInteger(next());
+        case 'i': case 'd': case 'u':
+            arg = (spec === 'u' ? toUnsignedInteger : toInteger)(next());
             result = numberToString(arg);
 
             precisionFunc = integerPrecision;

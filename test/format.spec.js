@@ -133,6 +133,16 @@
             });
         });
 
+        describe('%u specifier', function() {
+            it('prints unsigned 32bit integer', function() {
+                format('[%u]', 123)
+                    .should.equal('[123]');
+
+                format('[%u]', -321)
+                    .should.equal('[4294966975]');
+            });
+        });
+
         describe('%x and %X specifiers', function() {
             it('%x prints 32bit number in lowercase hex', function() {
                 format('[%x]', 3252)
