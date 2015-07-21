@@ -133,6 +133,62 @@
             });
         });
 
+        describe('%x and %X specifiers', function() {
+            it('%x prints 32bit number in lowercase hex', function() {
+                format('[%x]', 3252)
+                    .should.equal('[cb4]');
+
+                format('[%x]', -3252)
+                    .should.equal('[fffff34c]');
+            });
+
+            it('%X prints 32bit number in uppercase hex', function() {
+                format('[%X]', 3252)
+                    .should.equal('[CB4]');
+
+                format('[%X]', -3252)
+                    .should.equal('[FFFFF34C]');
+            
+            });
+
+            it('can be used with width', function() {
+                format('[%10x]', 372)
+                    .should.equal('[       174]');
+
+                format('[%05x]', 11)
+                    .should.equal('[0000b]');
+
+            });
+
+            it('can be used with flags', function() {
+                format('[%+x]', 33)
+                    .should.equal('[21]');
+
+                format('[% x]', 33)
+                    .should.equal('[21]');
+            });
+
+            it('prefixes number with 0x or 0X when # flag is specified', function() {
+                format('[%#x]', 33)
+                    .should.equal('[0x21]');
+
+                format('[%#X]', 33)
+                    .should.equal('[0X21]');
+
+                format('[%#03x]', 1)
+                    .should.equal('[0x001]');
+
+                format('[%#.3x]', 1)
+                    .should.equal('[0x001]');
+            });
+
+            it('can be used with precision', function() {
+                format('[%.3x]', 1)
+                    .should.equal('[001]');
+            });
+
+        });
+
         describe('width specifier', function() {
             it('specifies minimum field width (too short fields are padded ' + 
                'with spaces on the right)', function() {

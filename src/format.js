@@ -73,8 +73,12 @@
         return sign + formatted;
     };
 
-    var integerDecorator = function(number, width, formatted, flags) {
-        if (hasFlag(flags, '+')) {
+    var integerDecorator = function(options, number, width, formatted, flags) {
+        var isLowercaseHex = hasFlag(options, 'x');
+        var isUppercaseHex = hasFlag(options, 'X');
+        var hexNumber = isLowercaseHex || isUppercaseHex;
+
+        if (hasFlag(flags, '+') && !hexNumber) {
             if (number >= 0) {
                 formatted = '+' + formatted;
             }
@@ -88,9 +92,18 @@
             formatted = sign + formatted;
         }
 
-        if (hasFlag(flags, ' ')) {
+        if (hasFlag(flags, ' ') && !hexNumber) {
             if (formatted[0] !== '+' && formatted[0] !== '-') {
                 formatted = ' ' + formatted;
+            }
+        }
+
+        if (hexNumber && hasFlag(flags, '#')) {
+            if (isLowercaseHex) {
+                formatted = '0x' + formatted;
+            }
+            else {
+                formatted = '0X' + formatted;
             }
         }
 
@@ -108,6 +121,38 @@
         value = (value | 0);
 
         return (value < 0 ? 0 : value);
+    };
+
+    var toInteger = function(value) {
+        value = Number(value);
+        value = (isFinite(value) ? (value | 0) : value);
+        return value;
+    };
+
+    var toUnsignedInteger = function(value) {
+        value = toInteger(value);
+        value = (value >>> 0);
+        return value;
+    };
+
+    var numberToString = function(number, radix, formatCase) {
+        radix = radix || 10;
+
+        if (!isFinite(number)) {
+            return number.toString();
+        }
+        
+        number = number.toString(radix);
+
+        if (formatCase === 'uppercase') {
+            return number.toUpperCase();
+        }
+        else if (formatCase === 'lowercase') {
+            return number.toLowerCase();
+        }
+        else {
+            return number;
+        }
     };
 
     var formatSpecifier = function(next, flags, width, precision, spec) {
@@ -148,12 +193,19 @@
             break;
 
         case 'i': case 'd':
-            arg = Number(next());
-            arg = (isFinite(arg) ? (arg | 0) : arg);
-            result = String(arg);
+            arg = toInteger(next());
+            result = numberToString(arg);
 
             precisionFunc = integerPrecision;
-            decoratorFunc = integerDecorator.bind(null, arg, width);
+            decoratorFunc = integerDecorator.bind(null, '', arg, width);
+            break;
+
+        case 'x': case 'X':
+            arg = toUnsignedInteger(next());
+            result = numberToString(arg, 16, (spec === 'x' ? 'lowercase' : 'uppercase'));
+
+            precisionFunc = integerPrecision;
+            decoratorFunc = integerDecorator.bind(null, spec, arg, width);
             break;
 
         default:
@@ -200,7 +252,7 @@
         
         // format: %[flags][width][.precision][length]specifier
         // based on: http://www.cplusplus.com/reference/cstdio/printf
-        var SPECIFIER_REGEX = /%([-+ 0]*)?(\d+|\*)?(?:(\.)(\d+|\*)?)?([a-zA-Z])/g;
+        var SPECIFIER_REGEX = /%([-+ 0#]*)?(\d+|\*)?(?:(\.)(\d+|\*)?)?([a-zA-Z])/g;
 
         return format.replace(SPECIFIER_REGEX, 
             function(fullSpec, flags, width, dot, precision, spec) {
