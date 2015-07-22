@@ -42,6 +42,11 @@
                 .should.not.throw();
         });
 
+        it('allows to write % using %% specifier', function() {
+            format('%% foo %%')
+                .should.equal('% foo %');
+        });
+
         describe('%s specifier', function() {
             it('replaces specifier with String()\'ed version of argument', function() {
                 format('[%s]', 'foo').should.equal('[foo]');
@@ -141,6 +146,16 @@
                 format('[%u]', -321)
                     .should.equal('[4294966975]');
             });
+
+            it('doesn\'t support + flag', function() {
+                format('[%+u]', 12)
+                    .should.equal('[12]');
+            });
+
+            it('doesn\'t support (space) flag', function() {
+                format('[% u]', 23)
+                    .should.equal('[23]');
+            });
         });
 
         describe('%x and %X specifiers', function() {
@@ -170,7 +185,7 @@
 
             });
 
-            it('can be used with flags', function() {
+            it('+ and (space) flags are not supported', function() {
                 format('[%+x]', 33)
                     .should.equal('[21]');
 
@@ -197,6 +212,49 @@
                     .should.equal('[001]');
             });
 
+        });
+
+        describe('%o specifier', function() {
+            it ('%o prints 32bit unsigned number in octal', function() {
+                format('[%o]', 332)
+                    .should.equal('[514]');
+
+                format('[%o]', -332)
+                    .should.equal('[37777777264]');
+
+                format('[%o]', 17)
+                    .should.equal('[21]');
+
+                format('[%o]', 13)
+                    .should.equal('[15]');
+            });
+
+            it('can be used with width', function() {
+                format('[%10o]', 372)
+                    .should.equal('[       564]');
+
+                format('[%05o]', 11)
+                    .should.equal('[00013]');
+
+            });
+
+            it('+ and (space) flags are not supported', function() {
+                format('[%+o]', 33)
+                    .should.equal('[41]');
+
+                format('[% o]', 33)
+                    .should.equal('[41]');
+            });
+
+            it('prefixes number with 0 when # flag is specified', function() {
+                format('%#o', 33)
+                    .should.equal('041');
+            });
+
+            it('can be used with precision', function() {
+                format('[%.3o]', 1)
+                    .should.equal('[001]');
+            });
         });
 
         describe('width specifier', function() {
