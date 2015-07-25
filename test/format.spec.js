@@ -257,6 +257,26 @@
             });
         });
 
+        describe('%f and %F specifiers', function() {
+            xit('print real numbers', function() {
+                format('[%f]', 332.1223)
+                   .should.equal('[332.1223]');
+
+                // TODO: add .000000 - 6 digits default precision
+                format('[%f]', 33232432423434324234243432432424.343242342)
+                   .should.equal('[33232432654770135060433206247424]');
+
+                format('[%f]', -32.321)
+                    .should.equal('[-32.321]');
+
+               format('[%f]', 32)
+                    .should.equal('[32]');
+
+               format('[%f]', 0.321)
+                    .should.equal('[0.321]');
+            });
+        });
+
         describe('width specifier', function() {
             it('specifies minimum field width (too short fields are padded ' + 
                'with spaces on the right)', function() {

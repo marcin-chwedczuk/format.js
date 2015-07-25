@@ -154,7 +154,7 @@
         return value;
     };
 
-    var numberToString = function(number, radix, formatCase) {
+    var integerToString = function(number, radix, formatCase) {
         radix = radix || 10;
 
         if (!isFinite(number)) {
@@ -173,6 +173,37 @@
             return number;
         }
     };
+
+    // produce number string without using E notation
+    var numberToString = function(number) {
+        var result = number.toString().toUpperCase();
+
+        if (result.indexOf('E') === (-1)) {
+            return result;
+        }
+
+        // convert to string manually
+        // integer part:
+        var tmp = Math.abs(number);
+        var integerPart = '';
+
+        while (tmp >= 1.0) {
+            tmp = Math.round(tmp);
+            integerPart = ((tmp % 10) >>> 0).toString() + integerPart;
+            tmp /= 10.0;
+        }
+
+        // decimal part:
+        var decimalPart = '';
+        tmp = number % 1;
+        while (tmp > 0) {
+            tmp = tmp * 10.0;
+            decimalPart += ((tmp % 10) >>> 0).toString();
+            tmp = tmp % 1;
+        }
+
+        return (integerPart || '0') + (decimalPart ? '.' + decimalPart : '');
+    };   
 
     var formatSpecifier = function(next, flags, width, precision, spec) {
         var arg, 
@@ -213,7 +244,7 @@
 
         case 'i': case 'd': case 'u':
             arg = (spec === 'u' ? toUnsignedInteger : toInteger)(next());
-            result = numberToString(arg);
+            result = integerToString(arg);
 
             precisionFunc = integerPrecision;
             decoratorFunc = integerDecorator.bind(null, spec, arg, width);
@@ -222,10 +253,14 @@
         case 'x': case 'X': case 'o':
             var radix = (spec === 'o' ? 8 : 16);
             arg = toUnsignedInteger(next());
-            result = numberToString(arg, radix, (spec === 'x' ? 'lowercase' : 'uppercase'));
+            result = integerToString(arg, radix, (spec === 'x' ? 'lowercase' : 'uppercase'));
 
             precisionFunc = integerPrecision;
             decoratorFunc = integerDecorator.bind(null, spec, arg, width);
+            break;
+
+        case 'f':
+            result = numberToString(next());
             break;
 
         case '%':
