@@ -1,3 +1,5 @@
+/*jshint bitwise:false */
+
 (function(exports) {
     'use strict';
 
@@ -37,12 +39,20 @@
         return this._sign;
     };
 
-    BigInt.prototype.setSign = function(newSign) {
+    BigInt.prototype.changeSign = function(newSign) {
         if (newSign !== 1 && newSign !== (-1)) {
             throw new Error('invalid sign: ' + newSign);
         }
 
+        if (newSign === this.sign()) {
+            return this;
+        }
+
         return new BigInt(newSign, this._digits);
+    };
+
+    BigInt.prototype.negate = function() {
+        return this.changeSign(-this.sign());
     };
 
     var isSignCharacter = function(character) {
@@ -58,7 +68,7 @@
         }
     };
 
-    // Accepts strings in format: '00110' or '-01102'
+    // Accepts strings in format: '00110' or '-01101'
     //
     BigInt.fromBinary = function(binaryString) {
         if (!binaryString || !/^[+-]?[01]+$/.test(binaryString)) {
@@ -294,18 +304,32 @@
             throw new Error('missing argument');
         }
 
-        if (this.isZero()) {
-            return BigInt.zero();
-        }
-
         if (other.isZero()) {
             throw new Error('attempt to divide by zero.');
+        }
+
+        if (this.isZero()) {
+            return BigInt.zero();
         }
 
         var sign = this.sign() * other.sign();
         var qr = dividePositive(this._digits, other._digits);
 
         return new BigInt(sign, qr[0]);
+    };
+
+    BigInt.prototype.mod = function(other) {
+         if (!other) {
+            throw new Error('missing argument');
+        }
+
+        if (other.isZero()) {
+            throw new Error('attempt to divide by zero.');
+        }
+
+        var qr = dividePositive(this._digits, other._digits);
+
+        return new BigInt(this.sign(), qr[1]);
     };
 
     // Accepts strings in format: 99328 or -399 or +32
@@ -338,12 +362,88 @@
                 return acc.mul(DECIMAL_DIGIT_TO_BIGINT[10]).add(curr);
             }, BigInt.zero());
 
-            return result;
+            return result.changeSign(sign);
         };
     }());
 
-    BigInt.prototype.toDecimalString = function() {
+    BigInt.of = function(n) {
+        var tmp = (Number(n) | 0);
         
+        if (!isFinite(tmp)) {
+            throw new Error('invalid argument: ' + n);
+        }
+
+        return BigInt.fromDecimal(tmp.toString());
+    };
+
+    BigInt.prototype.toDecimalString = (function() {
+        var BINARY_TO_DECIMAL = {
+            '0':    '0',
+            '1':    '1',
+            '10':   '2',
+            '11':   '3',
+            '100':  '4',
+            '101':  '5',
+            '110':  '6',
+            '111':  '7',
+            '1000': '8',
+            '1001': '9'
+        };
+        
+        var TEN = BigInt.of(10);
+
+        return function() {
+            var digits = [];
+
+            var num = (this.isNegative() ? this.negate() : this);
+            
+            while (num.isGreaterThan(BigInt.zero())) {
+                var digit = num.mod(TEN);
+                num = num.div(TEN);
+
+                digits.unshift(BINARY_TO_DECIMAL[digit.toBinaryString()]);
+            }
+
+            return (this.isNegative() ? '-' : '') + (digits.join('') || '0');
+        };
+    }());
+
+    BigInt.prototype.isEqual = function(other) {
+        if (!other || !(other instanceof BigInt)) {
+            return false;
+        }
+
+        if (this.sign() !== other.sign()) {
+            return false;
+        }
+
+        var cmp = comparePositive(this._digits, other._digits);
+        return (cmp === 0);
+    };
+
+    BigInt.prototype.isLowerThan = function(other) {
+        if (this.sign() < other.sign()) {
+            return true;
+        }
+        else if (this.sign() > other.sign()) {
+            return false;
+        }
+        else {
+            var cmp = comparePositive(this._digits, other._digits);
+            return (this.isNegative() ? (cmp > 0) : (cmp < 0));
+        }
+    };
+
+    BigInt.prototype.isLowerOrEqual = function(other) {
+        return this.isLowerThan(other) || this.isEqual(other);
+    };
+
+    BigInt.prototype.isGreaterThan = function(other) {
+        return other.isLowerThan(this);
+    };
+
+    BigInt.prototype.isGreaterOrEqual = function(other) {
+        return other.isLowerOrEqual(this);
     };
 
     // compares numbers represented by two NORMALIZED
@@ -360,6 +460,18 @@
         }
 
         return 0;
+    };
+
+    BigInt.prototype.bitAt = function(index) {
+        if (typeof(index) !== 'number') {
+            throw new Error('argument must be a number: ' + index);
+        }
+
+        if (index < 0 || index >= this._digits.length) {
+            return 0;
+        }
+
+        return this._digits[index];
     };
 
 }(this));
