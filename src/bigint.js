@@ -474,4 +474,5 @@
         return this._digits[index];
     };
 
+
 }(this));

@@ -414,7 +414,12 @@
     });
 
     it('allows to read bit from digit', function() {
-        throw new Error('not impl');
+        var two = BigInt.fromBinary('10');
+
+        two.bitAt(-1).should.equal(0);
+        two.bitAt(0).should.equal(0);
+        two.bitAt(1).should.equal(1);
+        two.bitAt(2).should.equal(0);
     });
 
 }());
