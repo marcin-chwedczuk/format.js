@@ -1,3 +1,5 @@
+/*jshint bitwise:false */
+
 (function() {
     'use strict';
 
@@ -67,6 +69,38 @@
 
             d2b(119964.78068221989).mantissa.should.equal(
                 bin('1101010010011100110001111101101011001010001110110000'));
+        });
+
+        it('passes stress test', function() {
+            // this test is implementation and machine dependent
+            var buff = new ArrayBuffer(8);
+            var doubleView = new Float64Array(buff);
+            var intView = new Int32Array(buff);
+
+            var _32zero = new Array(33).join('0');
+
+            var MAX_TESTS = 10000;
+            for (var i = 0; i < MAX_TESTS; i += 1) {
+                var sign = (Math.random() > 0.5 ? 1 : -1);
+                var mantissa = 1.0 + Math.random();
+                var exp = 1022 - (2044 * Math.random());
+
+                var f = sign * Math.pow(2, exp) * mantissa;
+
+                doubleView[0] = f;
+
+                var expectedBits = 
+                    (_32zero + (intView[1] >>> 0).toString(2)).slice(-32) +
+                    (_32zero + (intView[0] >>> 0).toString(2)).slice(-32);
+
+                var tmp = d2b(f);
+                var actualBits = tmp.sign.toString(2) + 
+                        (_32zero + (tmp.exponent >>> 0).toString(2)).slice(-11) +
+                        (_32zero + _32zero + tmp.mantissa.toString(2).replace('-','')).slice(-52);
+
+                actualBits.should.equal(expectedBits, "value not equal for number: " + f);
+            }
+
         });
     });
 

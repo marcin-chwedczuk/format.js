@@ -74,6 +74,10 @@
             return 0;
         }
 
+        if (number < 0) {
+            number = -number;
+        }
+
         var log2 = exactLog2(number);
 
         var denormalized = (log2 <= -1023);
