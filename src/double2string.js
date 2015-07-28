@@ -76,16 +76,13 @@
 
         var log2 = exactLog2(number);
 
-        // for denormalized number Math.pow(2, exp)
-        // goes out of range
-        if (log2 > 1000) {
-            number /= Math.pow(2, 1000);
-            log2 -= 1000;
+        var denormalized = (log2 <= -1023);
+        if (denormalized) {
+            // add artificial 1 to mantissa
+            number += Math.pow(2, -1022);
+            log2 = -1022;
         }
-        if (log2 < -1000) {
-            number /= Math.pow(2, -1000);
-            log2 += 1000;
-        }
+
         number /= Math.pow(2, log2);
 
         // number have form 1.01001110111
