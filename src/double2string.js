@@ -13,6 +13,7 @@
             return 1;
         }
         else {
+            // differentiate between +0 and -0
             var inf = 1 / number;
             return (inf === Number.POSITIVE_INFINITY ? 0 : 1);
         }
@@ -51,7 +52,9 @@
 
         var exponent = exactLog2(number);
 
-        // exponent = realExponent - 1023
+        // double exponent is 11bit unsigned number.
+        // real exponent is computed as (11BIT_UNSIGNED_EXPONENT - 1023)
+        // if we want 11BIT_UNSIGNED_EXPONENT we must add 1023 to real exponent:
         exponent += 1023;
 
         // exponent can be negative in case of degenerated number
@@ -83,6 +86,7 @@
         var denormalized = (log2 <= -1023);
         if (denormalized) {
             // add artificial 1 to mantissa
+            // added number doesn't change mantissa bits
             number += Math.pow(2, -1022);
             log2 = -1022;
         }
