@@ -384,6 +384,10 @@
         BigInt.of(-321)
             .isEqual(BigInt.fromDecimal('-321'))
             .should.equal(true);
+
+        BigInt.of(63754082224964)
+            .toDecimalString()
+            .should.equal('63754082224964');
     });
 
     it('can be converted to decimal string', function() {
@@ -398,6 +402,22 @@
         BigInt.of(-6677)
             .toDecimalString()
             .should.equal('-6677');
+    });
+
+    it('toDecimalString() doesn\'t change state of object', function() {
+        var n = BigInt.of(-12345);
+        
+        n.toDecimalString();
+        n.toDecimalString();
+
+        n.toDecimalString().should.equal('-12345');
+
+        var n2 = BigInt.of(12345);
+
+        n2.toDecimalString();
+        n2.toDecimalString();
+
+        n2.toDecimalString().should.equal('12345');
     });
 
     it('toDecimalString() stres test', function() {
@@ -420,6 +440,38 @@
         two.bitAt(0).should.equal(0);
         two.bitAt(1).should.equal(1);
         two.bitAt(2).should.equal(0);
+    });
+
+    it('allows to raise one number to positive power', function() {
+        BigInt.one()
+            .pow(BigInt.of(31))
+            .isEqual(BigInt.one())
+            .should.equal(true);
+
+        BigInt.zero()
+            .pow(BigInt.of(327))
+            .isEqual(BigInt.zero())
+            .should.equal(true);
+
+        BigInt.of(737209)
+            .pow(BigInt.zero())
+            .isEqual(BigInt.one())
+            .should.equal(true);
+
+        BigInt.of(2)
+            .pow(BigInt.of(5))
+            .isEqual(BigInt.of(32))
+            .should.equal(true);
+
+        BigInt.of(7)
+            .pow(BigInt.of(17))
+            .isEqual(BigInt.fromDecimal('232630513987207'))
+            .should.equal(true);
+
+        BigInt.of(71)
+            .pow(BigInt.of(6))
+            .isEqual(BigInt.fromDecimal('128100283921'))
+            .should.equal(true);
     });
 
 }());

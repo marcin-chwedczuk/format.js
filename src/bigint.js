@@ -48,7 +48,7 @@
             return this;
         }
 
-        return new BigInt(newSign, this._digits);
+        return new BigInt(newSign, this._digits.slice());
     };
 
     BigInt.prototype.negate = function() {
@@ -367,7 +367,7 @@
     }());
 
     BigInt.of = function(n) {
-        var tmp = (Number(n) | 0);
+        var tmp = Math.round(Number(n));
         
         if (!isFinite(tmp)) {
             throw new Error('invalid argument: ' + n);
@@ -474,5 +474,22 @@
         return this._digits[index];
     };
 
+    BigInt.prototype.bitLength = function() {
+        return this._digits.length;
+    };
+
+    BigInt.prototype.pow = function(exponent) {
+        var result = BigInt.one();
+        var tmp = this;
+
+        for (var i = 0; i < exponent.bitLength(); i += 1) {
+            if (exponent.bitAt(i)) {
+                result = result.mul(tmp);
+            }
+            tmp = tmp.mul(tmp);
+        }
+
+        return result;
+    };
 
 }(this));
