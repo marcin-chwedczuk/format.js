@@ -474,6 +474,19 @@
             .should.equal(true);
     });
 
+    it('can divide two big number', function() {
+        // DIVISION NOT WORKS:
+        // 108086391056891900/36028797018963968
+        
+        var n1 = BigInt.fromDecimal('108086391056891900');
+        var n2 = BigInt.fromDecimal('36028797018963968');
+
+        n1
+            .div(n2)
+            .toDecimalString()
+            .should.equal('2');
+    });
+
 }());
 
  

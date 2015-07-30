@@ -211,31 +211,40 @@
 
         var digits = [];
         var n = 0;
+        var cond1, cond2;
 
         while(true) {
             var digit = r.mul(TEN).div(s).toDecimalString();
-            digits.push(digit);
+            digits.push(Number(digit));
 
             r = r.mul(TEN).mod(s);
             mplus = mplus.mul(TEN);
             mminus = mminus.mul(TEN);
 
             if (n++ > 30) {
-                console.error('inf loop');
+                console.error('error: inf loop');
                 break;
             }
             
-            if (r.isLowerThan(mminus)) {
-                break;
-            }
+            cond1 = r.isLowerThan(mminus);
+            cond2 = s.isLowerThan(r.add(mplus));
 
-            if (s.isLowerThan(r.add(mplus))) {
+            if (cond1 || cond2) {
                 break;
             }
         }
 
-        // DIVISION NOT WORKS:
-        // 108086391056891900/36028797018963968
+        if (!cond1 && cond2) {
+            digits[digits.length - 1] += 1;
+        }
+        else if (cond1 && cond2) {
+            // TODO: apply IEEE rounding
+            // both are good enough - choose one
+            var tmp = r.mul(TWO);
+            if (s.isLowerThan(tmp)) {
+                digits[digits.length - 1] += 1;
+            }
+        }
 
         return digits;
     };
