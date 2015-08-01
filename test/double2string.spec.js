@@ -114,6 +114,30 @@
         it('returns NaN for NaN number', function() {
             d2s(NaN).should.equal('NaN');
         });
+
+        it('returns Inf for positive infinity, and -Inf for negative infinity', function() {
+            d2s(Number.POSITIVE_INFINITY).should.equal('Inf');
+            d2s(Number.NEGATIVE_INFINITY).should.equal('-Inf');
+        });
+
+        it('returns "0" for zero and "-0" for minus zero', function() {
+            d2s(0).should.equal('0');
+            d2s(-0).should.equal('-0');
+        });
+
+        it('correctly prints integers', function() {
+            d2s(12345).should.equal('12345');
+            d2s(101).should.equal('101');
+
+            d2s(32).should.equal('32');
+            d2s(-32).should.equal('-32');
+
+            d2s(-8837129).should.equal('-8837129');
+        });
+
+        it('correctly prints number with fraction part', function() {
+            d2s(12345.554431).should.equal('12345.554431');
+        });
     });
 }());
 

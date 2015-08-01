@@ -152,106 +152,152 @@ var isEven = function(n) {
 // returns pair: { digits: [d1, d2, ...], k }
 // that represent number: 0.d1d2... x 10^k
 //
-var getDoubleDigits = function(number) {
-    var bits = double2bits(number);
-
-    var includeEnds = isEven(bits.mantissa);
-
+var getDoubleDigits = exports.getDoubleDigits = (function() {
     // 2^52 1 and 51 zeros
+    var ZERO = BigInt.zero();
     var ONE = BigInt.one();
     var TWO = BigInt.of(2);
     var TEN = BigInt.of(10);
     var TWO_EXP_52 = TWO.pow(BigInt.of(52));
     var TWO_EXP_53 = TWO.pow(BigInt.of(53));
 
-    var e = BigInt.of(bits.exponent === 0 ? -1074 : bits.exponent - 1075),
-        f = BigInt
-                .of(bits.mantissa)
-                .add(bits.exponent === 0 ? BigInt.zero() : TWO_EXP_52),
-        e1 = e.add(ONE);
+    return function(number) {
+        var bits = double2bits(number);
 
-    var r, s, mplus, mminus;
+        var includeEnds = isEven(bits.mantissa);
 
-    if (e.isGreaterOrEqual(BigInt.zero())) {
-        if (!f.isEqual(TWO_EXP_53)) {
-            r = f.mul(TWO.pow(e)).mul(TWO);
-            s = TWO;
-            mplus = mminus = TWO.pow(e);
+        if (bits.sign) {
+            number = -number;
+        }
+        var e = BigInt.of(bits.exponent === 0 ? -1074 : bits.exponent - 1075),
+            f = BigInt
+                    .of(bits.mantissa)
+                    .add(bits.exponent === 0 ? ZERO : TWO_EXP_52),
+            e1 = e.add(ONE);
+
+        var r, s, mplus, mminus;
+
+        if (e.isGreaterOrEqual(ZERO)) {
+            if (!f.isEqual(TWO_EXP_53)) {
+                r = f.mul(TWO.pow(e)).mul(TWO);
+                s = TWO;
+                mplus = mminus = TWO.pow(e);
+            }
+            else {
+                r = f.mul(TWO.pow(e1)).mul(TWO);
+                s = TWO.mul(TWO);
+                mplus = TWO.pow(e1);
+                mminus = TWO.pow(e);
+            }
         }
         else {
-            r = f.mul(TWO.pow(e1)).mul(TWO);
-            s = TWO.mul(TWO);
-            mplus = TWO.pow(e1);
-            mminus = TWO.pow(e);
+            if (bits.exponent === 0 || !f.isEqual(TWO_EXP_53)) {
+                r = f.mul(TWO);
+                s = TWO.pow(e.negate()).mul(TWO);
+                mplus = mminus = ONE;
+            }
+            else {
+                r = f.mul(TWO).mul(TWO);
+                s = TWO.pow(e1).mul(TWO);
+                mplus = TWO;
+                mminus = ONE;
+            }
         }
-    }
-    else {
-        if (bits.exponent === 0 || !f.isEqual(TWO_EXP_53)) {
-            r = f.mul(TWO);
-            s = TWO.pow(e.negate()).mul(TWO);
-            mplus = mminus = ONE;
+
+        var k = ceil10exp(r, mplus, s);
+
+        if (k >= 0) {
+            s = s.mul(TEN.pow(BigInt.of(k)));
         }
         else {
-            r = f.mul(TWO).mul(TWO);
-            s = TWO.pow(e1).mul(TWO);
-            mplus = TWO;
-            mminus = ONE;
+            var tenMK = TEN.pow(BigInt.of(-k));
+            r = r.mul(tenMK);
+            mplus = mplus.mul(tenMK);
+            mminus = mminus.mul(tenMK);
         }
-    }
 
-    var k = ceil10exp(r, mplus, s);
+        var digits = [];
+        var cond1, cond2;
+        var divMod;
 
-    if (k >= 0) {
-        s = s.mul(TEN.pow(BigInt.of(k)));
-    }
-    else {
-        var tenMK = TEN.pow(BigInt.of(-k));
-        r = r.mul(tenMK);
-        mplus = mplus.mul(tenMK);
-        mminus = mminus.mul(tenMK);
-    }
+        while(true) {
+            divMod = r.mul(TEN).divMod(s);
 
-    var digits = [];
-    var cond1, cond2;
-    var divMod;
+            var digit = divMod.div.toDecimalString();
+            digits.push(Number(digit));
 
-    while(true) {
-        divMod = r.mul(TEN).divMod(s);
+            r = divMod.mod;
+            mplus = mplus.mul(TEN);
+            mminus = mminus.mul(TEN);
 
-        var digit = divMod.div.toDecimalString();
-        digits.push(Number(digit));
+            cond1 = (includeEnds ? r.isLowerOrEqual(mminus) : r.isLowerThan(mminus));
+            cond2 = (includeEnds ? s.isLowerOrEqual(r.add(mplus)) : s.isLowerThan(r.add(mplus)));
 
-        r = divMod.mod;
-        mplus = mplus.mul(TEN);
-        mminus = mminus.mul(TEN);
-
-        cond1 = (includeEnds ? r.isLowerOrEqual(mminus) : r.isLowerThan(mminus));
-        cond2 = (includeEnds ? s.isLowerOrEqual(r.add(mplus)) : s.isLowerThan(r.add(mplus)));
-
-        if (cond1 || cond2) {
-            break;
+            if (cond1 || cond2) {
+                break;
+            }
         }
-    }
 
-    if (!cond1 && cond2) {
-        digits[digits.length - 1] += 1;
-    }
-    else if (cond1 && cond2) {
-        var tmp = r.mul(TWO);
-        if (s.isLowerThan(tmp)) {
+        if (!cond1 && cond2) {
             digits[digits.length - 1] += 1;
         }
-    }
+        else if (cond1 && cond2) {
+            var tmp = r.mul(TWO);
+            if (s.isLowerThan(tmp)) {
+                digits[digits.length - 1] += 1;
+            }
+        }
 
-    return {
-        digits: digits,
-        k: k
+        return {
+            digits: digits,
+            k: k,
+            sign: bits.sign
+        };
     };
+}());
+
+var padZeroLeft = function(array, numberOfZeros) {
+    return (new Array(numberOfZeros + 1).join(0)).concat(array);
+};
+
+var padZeroRight = function(array, numberOfZeros) {
+    return [].concat(array).concat(new Array(numberOfZeros + 1).join(0));
 };
 
 // returns string representation of number
 // @fractionDigits - number of digits printed after decimal point
 exports.double2string = function(number) {
-    return getDoubleDigits(number).digits;
+    if (isNaN(number)) {
+        return 'NaN';
+    }
+
+    if (!isFinite(number)) {
+        return (number > 0 ? 'Inf' : '-Inf');
+    }
+
+    if (number === 0) {
+        return (1 / number === Number.POSITIVE_INFINITY ? '0' : '-0');
+    }
+
+    // 0.d1d2d3d4... x 10^k
+    var result = getDoubleDigits(number);
+    var numberString;
+
+    if (result.k < 0) {
+        result.digits = padZeroLeft(result.digits, -result.k);
+        numberString = '0.' + result.digits.join('');
+    }
+    else {
+        if (result.k > result.digits.length) {
+            result.digits = padZeroRight(result.digits, result.k - result.digits.length); 
+        }
+
+        numberString = result.digits.slice(0, result.k).join('') +
+            '.'  +
+            result.digits.slice(result.k).join('');
+    }
+
+    var sign = (result.sign ? '-' : '');
+    return sign + numberString;
 };
 

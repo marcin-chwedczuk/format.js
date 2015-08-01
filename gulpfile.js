@@ -22,7 +22,8 @@
     var DEST_DIR = 'dist';
     var TEST_DIR = 'test';
 
-    var FORMAT_LIBRARY_NAME = 'format.js';
+    var USER_LIBRARY_NAME = 'format';
+    var FORMAT_LIBRARY_NAME = USER_LIBRARY_NAME + '.js';
     var FORMAT_LIBRARY_NAME_MIN = FORMAT_LIBRARY_NAME.replace('.js', '.min.js');
     var BROWSERIFIED_LIBRARY_NAME = FORMAT_LIBRARY_NAME.replace('.js', '.browserified.js');
 
@@ -42,7 +43,10 @@
     });
 
     gulp.task('browserify', function() {
-        var b = browserify(['./src/format.js', './src/scan.js'], { debug: true });
+        var b = browserify(['./src/exports.js'], { 
+            debug: true,
+            standalone: USER_LIBRARY_NAME
+        });
 
         return b.bundle()
             .pipe(source(BROWSERIFIED_LIBRARY_NAME))
