@@ -7,7 +7,13 @@
     // var expect = chai.expect;
     chai.should();
 
-    var d2b = require('../src/double2string.js').double2bits;
+    var module = require('../src/double2string.js');
+    var BigInt = require('../src/bigint.js').BigInt;
+
+    module.BigInt = BigInt;
+
+    var d2b = module.double2bits;
+    var d2s = module.double2string;
     
     var bin = function(b) {
         return parseInt(b, 2);
@@ -104,6 +110,11 @@
         });
     });
 
+    describe('double2string', function() {
+        it('returns NaN for NaN number', function() {
+            d2s(NaN).should.equal('NaN');
+        });
+    });
 }());
 
  

@@ -487,6 +487,14 @@
             .should.equal('2');
     });
 
+    it('can returns both quotient and remainder with single operation', function() {
+        var result = BigInt.of(37)
+            .divMod(BigInt.of(17));
+
+        result.div.toDecimalString().should.equal('2');
+        result.mod.toDecimalString().should.equal('3');
+    });
+
 }());
 
  

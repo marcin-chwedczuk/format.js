@@ -1,9 +1,6 @@
+/*jshint browserify:true */
+'use strict';
 
-(function(exports) {
-    'use strict';
-
-    exports.scan = function() {
-        throw new Error('not implementd yet!');
-    };
-
-}(this));
+exports.scan = function() {
+    throw new Error('not implementd yet!');
+};

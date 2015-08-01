@@ -15,17 +15,22 @@
     var mocha = require('gulp-mocha');
     var jshint = require('gulp-jshint');
     var betterConsole = require('better-console');
+    var source = require('vinyl-source-stream');
+    var browserify = require('browserify');
 
     var SOURCE_DIR = 'src';
     var DEST_DIR = 'dist';
     var TEST_DIR = 'test';
 
-    var LIBRARY_NAME = 'format.js';
-    var LIBRARY_NAME_MIN = LIBRARY_NAME.replace('.js', '.min.js');
+    var FORMAT_LIBRARY_NAME = 'format.js';
+    var FORMAT_LIBRARY_NAME_MIN = FORMAT_LIBRARY_NAME.replace('.js', '.min.js');
+    var BROWSERIFIED_LIBRARY_NAME = FORMAT_LIBRARY_NAME.replace('.js', '.browserified.js');
 
     var SOURCE_JS_FILES = SOURCE_DIR + '/*.js';
-    var DEST_JS_FILE = DEST_DIR + '/' + LIBRARY_NAME;
     var TEST_JS_FILES = TEST_DIR + '/*.js';
+    var DEST_JS_FILES = DEST_DIR + '/*.js';
+
+    var BROWSERIFIED_JS_FILES = DEST_DIR + '/' + BROWSERIFIED_LIBRARY_NAME;
 
     var JSHINT_REPORTER = 'jshint-stylish';
 
@@ -36,12 +41,19 @@
             .pipe(jshint.reporter('fail'))
     });
 
-    gulp.task('build', ['jshint'], function() {
-        return gulp.src(SOURCE_JS_FILES)
-            .pipe(concat(LIBRARY_NAME))
+    gulp.task('browserify', function() {
+        var b = browserify(['./src/format.js', './src/scan.js'], { debug: true });
+
+        return b.bundle()
+            .pipe(source(BROWSERIFIED_LIBRARY_NAME))
+            .pipe(gulp.dest(DEST_DIR));
+    });
+
+    gulp.task('build', ['jshint', 'browserify'], function() {
+        return gulp.src(BROWSERIFIED_JS_FILES)
             .pipe(gulp.dest(DEST_DIR))
             .pipe(uglify())
-            .pipe(rename(LIBRARY_NAME_MIN))
+            .pipe(rename(FORMAT_LIBRARY_NAME_MIN))
             .pipe(gulp.dest(DEST_DIR))
             .pipe(filesize())
             .on('error', gutil.log);
@@ -56,7 +68,7 @@
     });
 
     gulp.task('clean', function() {
-        return gulp.src(DEST_JS_FILE, { read: false })
+        return gulp.src(DEST_JS_FILES, { read: false })
             .pipe(clean())
             .on('error', gutil.log);
     });
