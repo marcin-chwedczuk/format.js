@@ -137,7 +137,80 @@
 
         it('correctly prints number with fraction part', function() {
             d2s(12345.554431).should.equal('12345.554431');
+
+            d2s(0.12345).should.equal('0.12345');
+
+            d2s(-0.3).should.equal('-0.3');
         });
+
+        it('correctly prints min and max double values', function() {
+            var _323zeros = new Array(323+1).join('0');
+            var _292zeros = new Array(292+1).join('0');
+
+            d2s(Number.MIN_VALUE).should.equal('0.' + _323zeros + '5');
+            d2s(Number.MAX_VALUE).should.equal('17976931348623157' + _292zeros);
+        });
+
+        it('correctly prints min and max integer values', function() {
+            d2s(9007199254740991).should.equal('9007199254740991');
+            d2s(-9007199254740991).should.equal('-9007199254740991');
+        });
+
+        it('correctly prints PI and E numbers', function() {
+            d2s(Math.PI).should.equal('3.141592653589793');
+            d2s(Math.E).should.equal('2.718281828459045');
+        });
+
+        it('passes stres test', function() {
+            for (var i = 0; i < 500; i += 1) {
+                var r = Math.random();
+                
+                var rstr = r.toString();
+                if (rstr.indexOf('E') !== (-1) || rstr.indexOf('e') !== (-1)) {
+                    // skip numbers in format 1.3543e+39
+                    continue;
+                }
+
+                d2s(r).should.equal(rstr);
+            }
+        });
+
+        it('allows precision to be specified', function() {
+            d2s(3344, 4).should.equal('3344.0000');
+            d2s(12.34, 4).should.equal('12.3400');
+            d2s(Math.PI, 3).should.equal('3.142');
+            d2s(0.3322112233, 5).should.equal('0.33221');
+            
+            d2s(0,3).should.equal('0.000');
+        });
+
+        it('correctly rounds numbers when precision is specified', function() {
+            d2s(3.34, 1).should.equal('3.3');
+            d2s(3.53, 1).should.equal('3.5');
+            d2s(3.55, 1).should.equal('3.6');
+            d2s(3.59, 1).should.equal('3.6');
+            d2s(3.54, 1).should.equal('3.5');
+
+            d2s(-4.778, 2).should.equal('-4.78');
+            d2s(-4.223, 2).should.equal('-4.22');
+
+            d2s(0.6898480195086449, 3).should.equal('0.690');
+        });
+
+        it('passes precision stres test', function() {
+            for (var i = 0; i < 500; i += 1) {
+                var r = Math.random();
+                
+                var rstr = r.toFixed(3);
+                if (rstr.indexOf('E') !== (-1) || rstr.indexOf('e') !== (-1)) {
+                    // skip numbers in format 1.3543e+39
+                    continue;
+                }
+
+                d2s(r, 3).should.equal(rstr, 'r = ' + r);
+            }
+        });
+
     });
 }());
 

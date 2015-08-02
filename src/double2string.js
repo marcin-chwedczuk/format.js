@@ -162,6 +162,14 @@ var getDoubleDigits = exports.getDoubleDigits = (function() {
     var TWO_EXP_53 = TWO.pow(BigInt.of(53));
 
     return function(number) {
+        if (number === 0) {
+            return {
+                sign: (1 / number === Number.POSITIVE_INFINITY ? 0 : 1),
+                k: 0,
+                digits: []
+            };
+        }
+
         var bits = double2bits(number);
 
         var includeEnds = isEven(bits.mantissa);
@@ -169,6 +177,7 @@ var getDoubleDigits = exports.getDoubleDigits = (function() {
         if (bits.sign) {
             number = -number;
         }
+
         var e = BigInt.of(bits.exponent === 0 ? -1074 : bits.exponent - 1075),
             f = BigInt
                     .of(bits.mantissa)
@@ -257,16 +266,58 @@ var getDoubleDigits = exports.getDoubleDigits = (function() {
 }());
 
 var padZeroLeft = function(array, numberOfZeros) {
-    return (new Array(numberOfZeros + 1).join(0)).concat(array);
+    array = array.slice();
+
+    for (var i = 0; i < numberOfZeros; i += 1) {
+        array.unshift(0);
+    }
+
+    return array;
 };
 
 var padZeroRight = function(array, numberOfZeros) {
-    return [].concat(array).concat(new Array(numberOfZeros + 1).join(0));
+    array = array.slice();
+
+    for (var i = 0; i < numberOfZeros; i += 1) {
+        array.push(0);
+    }
+
+    return array;
+};
+
+var roundUp = function(integerDigits, fractionDigits) {
+    var i, carry = 1;
+    
+    for (i = fractionDigits.length-1; carry && (i >= 0); i -= 1) {
+        fractionDigits[i] += carry;
+        if (fractionDigits[i] >= 10) {
+            fractionDigits[i] -= 10;
+            carry = 1;
+        }
+        else {
+            carry = 0;
+        }
+    }
+
+    for (i = 0; carry && (i < integerDigits.length); i += 1) {
+        integerDigits[i] += carry;
+        if (integerDigits[i] >= 10) {
+            integerDigits[i] -= 10;
+            carry = 1;
+        }
+        else {
+            carry = 0;
+        }
+    }
+
+    if (carry) {
+        integerDigits.unshift(1);
+    }
 };
 
 // returns string representation of number
-// @fractionDigits - number of digits printed after decimal point
-exports.double2string = function(number) {
+// @precision - number of digits printed after decimal point
+exports.double2string = function(number, precision) {
     if (isNaN(number)) {
         return 'NaN';
     }
@@ -275,27 +326,45 @@ exports.double2string = function(number) {
         return (number > 0 ? 'Inf' : '-Inf');
     }
 
-    if (number === 0) {
-        return (1 / number === Number.POSITIVE_INFINITY ? '0' : '-0');
-    }
-
     // 0.d1d2d3d4... x 10^k
     var result = getDoubleDigits(number);
-    var numberString;
+
+    var integerDigits, fractionDigits;
 
     if (result.k < 0) {
-        result.digits = padZeroLeft(result.digits, -result.k);
-        numberString = '0.' + result.digits.join('');
+        integerDigits = [0];
+        fractionDigits = padZeroLeft(result.digits, -result.k);
     }
     else {
         if (result.k > result.digits.length) {
             result.digits = padZeroRight(result.digits, result.k - result.digits.length); 
         }
 
-        numberString = result.digits.slice(0, result.k).join('') +
-            '.'  +
-            result.digits.slice(result.k).join('');
+        integerDigits = (result.k ? result.digits.slice(0, result.k) : [0]);
+        fractionDigits = result.digits.slice(result.k);
     }
+
+    if (typeof(precision) !== "undefined") {
+        if (fractionDigits.length < precision) {
+            fractionDigits = padZeroRight(fractionDigits, precision - fractionDigits.length);
+        }
+        else {
+            // rounding
+            var needsRoundingUp = 
+                (fractionDigits.length > precision) && 
+                (fractionDigits[precision] >= 5);
+
+            fractionDigits = fractionDigits.slice(0, precision);
+
+            if (needsRoundingUp) {
+                roundUp(integerDigits, fractionDigits);
+            }
+        }
+    }
+
+    var numberString = 
+        integerDigits.join('') + 
+        (fractionDigits.length ? '.' + fractionDigits.join('') : '');
 
     var sign = (result.sign ? '-' : '');
     return sign + numberString;
