@@ -5,4 +5,4 @@
 exports.format = require('./format.js').format;
 exports.scan = require('./scan.js').scan;
 
-exports.d2s = require('./double2string.js').double2string;
+exports.d2s = require('./double2string.js').double2string2;

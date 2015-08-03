@@ -495,6 +495,20 @@
         result.mod.toDecimalString().should.equal('3');
     });
 
+    it('allows to get decimal digits of number as array', function() {
+        BigInt.of(123)
+            .getDecimalDigits()
+            .should.eql([1,2,3]);
+
+        BigInt.of(0)
+            .getDecimalDigits()
+            .should.eql([0]);
+
+        BigInt.of(-33551)
+            .getDecimalDigits()
+            .should.eql([3,3,5,5,1]);
+    });
+
 }());
 
  

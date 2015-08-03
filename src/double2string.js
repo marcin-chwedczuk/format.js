@@ -370,3 +370,63 @@ exports.double2string = function(number, precision) {
     return sign + numberString;
 };
 
+exports.double2string2 = function(number, precision) {
+    precision = (typeof(precision) === "undefined" ? 6 : precision);
+
+    if (isNaN(number)) {
+        return 'NaN';
+    }
+
+    if (!isFinite(number)) {
+        return (number > 0 ? 'Inf' : '-Inf');
+    }
+
+    var bits = double2bits(number);
+    
+    // 2^52 1 and 51 zeros
+    var ZERO = BigInt.zero();
+    var ONE = BigInt.one();
+    var TWO = BigInt.of(2);
+    var TEN = BigInt.of(10);
+    var TWO_EXP_52 = TWO.pow(BigInt.of(52));
+
+    // number = r * 2^e
+    var e = BigInt.of(bits.exponent === 0 ? -1074 : bits.exponent - 1075),
+        r = BigInt
+                .of(bits.mantissa)
+                .add(bits.exponent === 0 ? ZERO : TWO_EXP_52),
+        s;
+ 
+
+    // number = r/s; r,s in Z
+    if (e.isGreaterOrEqual(ZERO)) {
+        s = ONE;
+        r = r.mul(TWO.pow(e));
+    }
+    else {
+        s = TWO.pow(e.negate());
+    }
+
+    var divMod = r.divMod(s);
+
+    var integerDigits = divMod.div
+        .toDecimalString()
+        .split('')
+        .map(Number);
+
+    var fractionDigits = [];
+
+    for (var i = 0; i < precision; i += 1) {
+        divMod = divMod.mod.mul(TEN).divMod(s);
+        fractionDigits.push(Number(divMod.div.toDecimalString()));
+    }
+
+    if (divMod.mod.mul(TEN).divMod(s).div.isGreaterOrEqual(BigInt.of(5))) {
+        roundUp(integerDigits, fractionDigits);
+    }
+
+    return (bits.sign ? '-' : '') + 
+        integerDigits.join('') + 
+        (fractionDigits.length ? '.' + fractionDigits.join('') : '');
+};
+

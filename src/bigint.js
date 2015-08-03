@@ -375,18 +375,18 @@ BigInt.of = function(n) {
     return BigInt.fromDecimal(tmp.toString());
 };
 
-BigInt.prototype.toDecimalString = (function() {
+BigInt.prototype.getDecimalDigits = (function() {
     var BINARY_TO_DECIMAL = {
-        '0':    '0',
-        '1':    '1',
-        '10':   '2',
-        '11':   '3',
-        '100':  '4',
-        '101':  '5',
-        '110':  '6',
-        '111':  '7',
-        '1000': '8',
-        '1001': '9'
+        '0':    0,
+        '1':    1,
+        '10':   2,
+        '11':   3,
+        '100':  4,
+        '101':  5,
+        '110':  6,
+        '111':  7,
+        '1000': 8,
+        '1001': 9
     };
     
     var TEN = BigInt.of(10);
@@ -403,9 +403,18 @@ BigInt.prototype.toDecimalString = (function() {
             digits.unshift(BINARY_TO_DECIMAL[digit.toBinaryString()]);
         }
 
-        return (this.isNegative() ? '-' : '') + (digits.join('') || '0');
+        if (!digits.length) {
+            digits.push(0);
+        }
+
+        return digits;
     };
 }());
+
+BigInt.prototype.toDecimalString = function() {
+    var digits = this.getDecimalDigits();
+    return (this.isNegative() ? '-' : '') + (digits.join('') || '0');
+};
 
 BigInt.prototype.isEqual = function(other) {
     if (!other || !(other instanceof BigInt)) {

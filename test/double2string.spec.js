@@ -14,6 +14,7 @@
 
     var d2b = module.double2bits;
     var d2s = module.double2string;
+    var d2s2 = module.double2string2;
     
     var bin = function(b) {
         return parseInt(b, 2);
@@ -212,6 +213,124 @@
         });
 
     });
+
+    
+    describe('double2string2', function() {
+        it('returns NaN for NaN number', function() {
+            d2s2(NaN).should.equal('NaN');
+        });
+
+        it('returns Inf for positive infinity, and -Inf for negative infinity', function() {
+            d2s2(Number.POSITIVE_INFINITY).should.equal('Inf');
+            d2s2(Number.NEGATIVE_INFINITY).should.equal('-Inf');
+        });
+
+        it('returns "0" for zero and "-0" for minus zero', function() {
+            d2s2(0, 0).should.equal('0');
+            d2s2(-0, 0).should.equal('-0');
+        });
+
+        it('correctly prints integers', function() {
+            d2s2(12345, 0).should.equal('12345');
+            d2s2(101, 0).should.equal('101');
+
+            d2s2(32, 0).should.equal('32');
+            d2s2(-32, 0).should.equal('-32');
+
+            d2s2(-8837129, 0).should.equal('-8837129');
+        });
+
+        it('correctly prints number with fraction part', function() {
+            d2s2(12345.554431, 6).should.equal('12345.554431');
+
+            d2s2(0.12345, 5).should.equal('0.12345');
+
+            d2s2(-0.3, 1).should.equal('-0.3');
+        });
+
+        it('correctly prints min and max double values', function() {
+            var _323zeros = new Array(323+1).join('0');
+
+            d2s2(Number.MIN_VALUE, 324).should.equal('0.' + _323zeros + '5');
+            d2s2(Number.MAX_VALUE, 0).should.equal(
+                '17976931348623157081452742373170435679807056752584499' +
+                '65989174768031572607800285387605895586327668781715404' +
+                '58953514382464234321326889464182768467546703537516986' +
+                '04991057655128207624549009038932894407586850845513394' +
+                '23045832369032229481658085593321233482747978262041447' +
+                '23168738177180919299881250404026184124858368');
+        });
+
+        it('correctly prints min and max integer values', function() {
+            d2s2(9007199254740991, 0).should.equal('9007199254740991');
+            d2s2(-9007199254740991, 0).should.equal('-9007199254740991');
+        });
+
+        it('correctly prints PI and E numbers', function() {
+            d2s2(Math.PI, 15).should.equal('3.141592653589793');
+            d2s2(Math.E, 15).should.equal('2.718281828459045');
+        });
+
+        it('passes stres test', function() {
+            for (var i = 0; i < 500; i += 1) {
+                var r = Math.random();
+                
+                var rstr = r.toString();
+                if (rstr.indexOf('E') !== (-1) || rstr.indexOf('e') !== (-1)) {
+                    // skip numbers in format 1.3543e+39
+                    continue;
+                }
+                
+                var precision = rstr.length - rstr.indexOf('.') - 1;
+
+                d2s2(r, precision).should.equal(rstr);
+            }
+        });
+
+        it('allows precision to be specified', function() {
+            d2s2(3344, 4).should.equal('3344.0000');
+            d2s2(12.34, 4).should.equal('12.3400');
+            d2s2(Math.PI, 3).should.equal('3.142');
+            d2s2(0.3322112233, 5).should.equal('0.33221');
+            
+            d2s2(0,3).should.equal('0.000');
+        });
+
+        it('correctly rounds numbers when precision is specified', function() {
+            d2s2(3.34, 1).should.equal('3.3');
+            d2s2(3.53, 1).should.equal('3.5');
+            
+            // this one is interesting, due to rounding errors
+            // 3.55 is actually represented as 3.5499999...99
+            // this is behaviour exposed by toFixed(1) and C' printf.
+            d2s2(3.55, 1).should.equal('3.5');
+
+            d2s2(3.59, 1).should.equal('3.6');
+            d2s2(3.54, 1).should.equal('3.5');
+
+            d2s2(-4.778, 2).should.equal('-4.78');
+            d2s2(-4.223, 2).should.equal('-4.22');
+
+            d2s2(0.6898480195086449, 3).should.equal('0.690');
+        });
+
+        it('passes precision stres test', function() {
+            for (var i = 0; i < 500; i += 1) {
+                var r = Math.random();
+                
+                var rstr = r.toFixed(3);
+                if (rstr.indexOf('E') !== (-1) || rstr.indexOf('e') !== (-1)) {
+                    // skip numbers in format 1.3543e+39
+                    continue;
+                }
+
+                d2s2(r, 3).should.equal(rstr, 'r = ' + r);
+            }
+        });
+
+   
+    });
+
 }());
 
  
