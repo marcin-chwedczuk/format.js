@@ -2,6 +2,8 @@
 
 'use strict';
 
+var _double2string = require('./double2string').double2string2;
+
 var throwError = function(message) {
     throw new Error('format.js: ' + message);
 };
@@ -173,36 +175,49 @@ var integerToString = function(number, radix, formatCase) {
     }
 };
 
+var nonNumberToString = function(number) {
+    if (number === Number.NaN) {
+        return 'NaN';
+    }
+    else if (number === Number.POSITIVE_INFINITY) {
+        return 'Infinity';
+    }
+    else if (number === Number.NEGATIVE_INFINITY) {
+        return '-Infinity';
+    }
+    else {
+        return number.toString();
+    }
+};
+
 // produce number string without using E notation
-var numberToString = function(number) {
-    var result = number.toString().toUpperCase();
+var numberToString = (function() {
+    var SCIENTIFIC_NOTATION_REGEX = /[Ee]/;
+    var DEFAULT_PRECISION = 6;
+    var MAX_TO_FIXED_PRECISION = 20;
 
-    if (result.indexOf('E') === (-1)) {
-        return result;
-    }
+    return function(number, precision) {
+        precision = (precision === null ? DEFAULT_PRECISION : precision);
 
-    // convert to string manually
-    // integer part:
-    var tmp = Math.abs(number);
-    var integerPart = '';
+        if (!isFinite(number)) {
+            return nonNumberToString(number);
+        }
 
-    while (tmp >= 1.0) {
-        tmp = Math.round(tmp);
-        integerPart = ((tmp % 10) >>> 0).toString() + integerPart;
-        tmp /= 10.0;
-    }
+        // returns number in form 4.436 or 1.32e+4
+        var numberString = null;
+        
+        if (precision <= MAX_TO_FIXED_PRECISION) {
+            numberString = number.toFixed(precision);
+        }
+        
+        if (!numberString || SCIENTIFIC_NOTATION_REGEX.test(numberString)) {
+            // use slow but accurate method to get number string
+            numberString = _double2string(number, precision);
+        }
 
-    // decimal part:
-    var decimalPart = '';
-    tmp = number % 1;
-    while (tmp > 0) {
-        tmp = tmp * 10.0;
-        decimalPart += ((tmp % 10) >>> 0).toString();
-        tmp = tmp % 1;
-    }
-
-    return (integerPart || '0') + (decimalPart ? '.' + decimalPart : '');
-};   
+        return numberString;
+    };
+}());
 
 var formatSpecifier = function(next, flags, width, precision, spec) {
     var arg, 
@@ -258,8 +273,8 @@ var formatSpecifier = function(next, flags, width, precision, spec) {
         decoratorFunc = integerDecorator.bind(null, spec, arg, width);
         break;
 
-    case 'f':
-        result = numberToString(next());
+    case 'f': case 'F':
+        result = numberToString(next(), precision);
         break;
 
     case '%':

@@ -172,7 +172,7 @@
                     continue;
                 }
 
-                d2s(r).should.equal(rstr);
+                Number(d2s(r)).should.equal(r);
             }
         });
 
@@ -327,7 +327,6 @@
                 d2s2(r, 3).should.equal(rstr, 'r = ' + r);
             }
         });
-
    
     });
 

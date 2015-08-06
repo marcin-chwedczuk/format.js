@@ -258,22 +258,79 @@
         });
 
         describe('%f and %F specifiers', function() {
-            xit('print real numbers', function() {
+            it('print real numbers', function() {
+                // Default precision is 6 
+                
                 format('[%f]', 332.1223)
-                   .should.equal('[332.1223]');
+                   .should.equal('[332.122300]');
 
-                // TODO: add .000000 - 6 digits default precision
+                // floating point rounding
                 format('[%f]', 33232432423434324234243432432424.343242342)
-                   .should.equal('[33232432654770135060433206247424]');
+                   .should.equal('[33232432423434322972844123750400.000000]');
 
                 format('[%f]', -32.321)
-                    .should.equal('[-32.321]');
+                    .should.equal('[-32.321000]');
 
                format('[%f]', 32)
-                    .should.equal('[32]');
+                    .should.equal('[32.000000]');
 
                format('[%f]', 0.321)
-                    .should.equal('[0.321]');
+                    .should.equal('[0.321000]');
+            });
+
+            describe('precision', function() {
+                it('can be set to zero', function() {
+                    format('[%.0f]', Math.PI)
+                        .should.equal('[3]');
+
+                    format('[%.0f]', 3344)
+                        .should.equal('[3344]');
+
+                    format('[%.0f]', 0.001)
+                        .should.equal('[0]');
+
+                    // rounding errors
+                    format('[%.0f]', 0.8)
+                        .should.equal('[1]');
+
+                    format('[%.0f]', -5.9)
+                        .should.equal('[-6]');
+                });
+
+                it('can be set to arbitrary number', function() {
+                    format('%.3f', 1)
+                        .should.equal('1.000');
+
+                    format('%.10f', 1)
+                        .should.equal('1.0000000000');
+
+                    format('%.30f', 1)
+                        .should.equal('1.000000000000000000000000000000');
+
+                    format('%.15f', Math.PI)
+                        .should.equal('3.141592653589793');
+                });
+
+                it('can be set from preceding argument', function() {
+                    format('%.*f', 5, 12.44553322)
+                        .should.equal('12.44553');
+
+                    format('%.*f', 3, 12.44554)
+                        .should.equal('12.446');
+                });
+            });
+
+            it('allows to use F in place of f', function() {
+                format('%.3F', 3.1234)
+                    .should.equal('3.123');
+            });
+
+            it('supports field width', function() {
+                format('%5.2f', 1.223)
+                    .should.equal(' 1.22');
+
+                format('%5f', Math.PI)
+                    .should.equal('3.141593');
             });
         });
 
