@@ -399,6 +399,23 @@
                 format('[%#.0f]', 0)
                     .should.equal('[0.]');
             });
+
+            it('supports zero flag (pad with zeros when width specified)', function() {
+                format('[%0f]', 3)
+                    .should.equal('[3.000000]');
+
+                format('[%0f]', -4.2)
+                    .should.equal('[-4.200000]');
+
+                format('[%06.2f]', 8.32)
+                    .should.equal('[008.32]');
+
+                format('[%07.2f]', -1.78)
+                    .should.equal('[-001.78]');
+
+                format('[%04.2f]', 33445.43)
+                    .should.equal('[33445.43]');
+            });
         });
 
         describe('width specifier', function() {
