@@ -2,9 +2,6 @@
 
 'use strict';
 
-// TODO: Merge with format.js or pin function to format.js
-//
-
 var BigInt = require('./bigint.js').BigInt;
 
 var getSign = function(number) {

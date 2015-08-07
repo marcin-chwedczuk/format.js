@@ -86,15 +86,21 @@ var integerPrecision = function(formatted, precision) {
     return sign + formatted;
 };
 
-var integerDecorator = function(options, number, width, formatted, flags) {
+var numberDecorator = function(options, number, width, formatted, flags) {
     var isLowercaseHex = hasFlag(options, 'x');
     var isUppercaseHex = hasFlag(options, 'X');
     var isHexNumber = isLowercaseHex || isUppercaseHex;
     var isOctNumber = hasFlag(options, 'o');
     var isUnsigned = hasAnyFlag(options, 'x', 'X', 'u', 'o');
+    var isFloatingPoint = hasAnyFlag(options, 'f', 'F');
 
     if (hasFlag(flags, '+') && !isUnsigned) {
-        if (number >= 0) {
+        if (isFloatingPoint) {
+            if (number > 0 || isPlusZero(number)) {
+                formatted = '+' + formatted;
+            }
+        }
+        else if (number >= 0) {
             formatted = '+' + formatted;
         }
     }
@@ -190,6 +196,22 @@ var nonNumberToString = function(number) {
     }
 };
 
+var isMinusZero = function(n) {
+    if (n !== 0) {
+        return false;
+    }
+
+    return ((1/n) === Number.NEGATIVE_INFINITY);
+};
+
+var isPlusZero = function(n) {
+    if (n !== 0) {
+        return false;
+    }
+
+    return ((1/n) === Number.POSITIVE_INFINITY);
+};
+
 // produce number string without using E notation
 var numberToString = (function() {
     var SCIENTIFIC_NOTATION_REGEX = /[Ee]/;
@@ -210,6 +232,12 @@ var numberToString = (function() {
             numberString = number.toFixed(precision);
         }
         
+        // quick fix for -0 which is not handled properly by toFixed
+        if (number === 0 && isMinusZero(number)) {
+            numberString = '-' + numberString;
+        }
+
+
         if (!numberString || SCIENTIFIC_NOTATION_REGEX.test(numberString)) {
             // use slow but accurate method to get number string
             numberString = _double2string(number, precision);
@@ -261,7 +289,7 @@ var formatSpecifier = function(next, flags, width, precision, spec) {
         result = integerToString(arg);
 
         precisionFunc = integerPrecision;
-        decoratorFunc = integerDecorator.bind(null, spec, arg, width);
+        decoratorFunc = numberDecorator.bind(null, spec, arg, width);
         break;
 
     case 'x': case 'X': case 'o':
@@ -270,11 +298,13 @@ var formatSpecifier = function(next, flags, width, precision, spec) {
         result = integerToString(arg, radix, (spec === 'x' ? 'lowercase' : 'uppercase'));
 
         precisionFunc = integerPrecision;
-        decoratorFunc = integerDecorator.bind(null, spec, arg, width);
+        decoratorFunc = numberDecorator.bind(null, spec, arg, width);
         break;
 
     case 'f': case 'F':
-        result = numberToString(next(), precision);
+        arg = next();
+        result = numberToString(arg, precision);
+        decoratorFunc = numberDecorator.bind(null, spec, arg, width);
         break;
 
     case '%':

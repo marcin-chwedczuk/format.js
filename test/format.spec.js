@@ -332,6 +332,39 @@
                 format('%5f', Math.PI)
                     .should.equal('3.141593');
             });
+
+            it('correctly prints nan, +inf and -inf', function() {
+                format('[%f]', Number.NaN)
+                    .should.equal('[NaN]');
+
+                format('[%f]', Number.POSITIVE_INFINITY)
+                    .should.equal('[Infinity]');
+
+                format('[%f]', Number.NEGATIVE_INFINITY)
+                    .should.equal('[-Infinity]');
+            });
+
+            it('supports - flag', function() {
+                format('%-10.2f', 334455.6677)
+                    .should.equal('334455.67 ');
+
+                format('%-10.0f', 123)
+                    .should.equal('123       ');
+            });
+
+            it('supports + flag', function() {
+                format('[%+f]', 0)
+                    .should.equal('[+0.000000]');
+
+                format('[%+f]', -0)
+                    .should.equal('[-0.000000]');
+
+                format('[%+f]', 332.334)
+                    .should.equal('[+332.334000]');
+
+                format('[%+f]', -8347.43)
+                    .should.equal('[-8347.430000]');
+            });
         });
 
         describe('width specifier', function() {
@@ -460,8 +493,6 @@
 
                 format('[%+d]', 0)
                     .should.equal('[+0]');
-
-                // TODO: Add floating points
             });
 
             it('space flag causes space to be added before number if number has no sign', function() {
