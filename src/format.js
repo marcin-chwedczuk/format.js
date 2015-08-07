@@ -131,6 +131,11 @@ var numberDecorator = function(options, number, width, formatted, flags) {
         else if (isOctNumber) {
             formatted = '0' + formatted;
         }
+        else if (isFloatingPoint) {
+            if (formatted.indexOf('.') === (-1)) {
+                formatted = formatted + '.';
+            }
+        }
     }
 
     return formatted;

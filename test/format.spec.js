@@ -365,6 +365,40 @@
                 format('[%+f]', -8347.43)
                     .should.equal('[-8347.430000]');
             });
+
+            it('supports (space) flag', function() {
+                format('[% f]', 0)
+                    .should.equal('[ 0.000000]');
+
+                format('[% f]', 324)
+                    .should.equal('[ 324.000000]');
+
+                format('[% f]', 3.435)
+                    .should.equal('[ 3.435000]');
+
+                format('[% f]', -0)
+                    .should.equal('[-0.000000]');
+
+                format('[% f]', -38.43)
+                    .should.equal('[-38.430000]');
+            });
+
+            it('supports # flag (always write decimal point)', function() {
+                format('[%#f]', 3)
+                    .should.equal('[3.000000]');
+
+                format('[%#f]', -4.44)
+                    .should.equal('[-4.440000]');
+
+                format('[%#.0f]', 2)
+                    .should.equal('[2.]');
+
+                format('[%#.0f]', -3)
+                    .should.equal('[-3.]');
+
+                format('[%#.0f]', 0)
+                    .should.equal('[0.]');
+            });
         });
 
         describe('width specifier', function() {
