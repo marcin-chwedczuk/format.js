@@ -15,6 +15,7 @@
     var d2b = module.double2bits;
     var d2s = module.double2string;
     var d2s2 = module.double2string2;
+    var dexp = module.double2string2exp;
     
     var bin = function(b) {
         return parseInt(b, 2);
@@ -214,7 +215,6 @@
 
     });
 
-    
     describe('double2string2', function() {
         it('returns NaN for NaN number', function() {
             d2s2(NaN).should.equal('NaN');
@@ -327,7 +327,62 @@
                 d2s2(r, 3).should.equal(rstr, 'r = ' + r);
             }
         });
-   
+    });
+
+    describe('double2string2exp', function() {
+        it('prints numbers in scientific notation', function() {
+            dexp('e', 102, 2)
+                .should.equal('1.02e+02');
+
+            dexp('e', 133.55, 4)
+                .should.equal('1.3355e+02');
+
+            dexp('e', 1, 4)
+                .should.equal('1.0000e+00');
+
+            dexp('e', 1.23456, 2)
+                .should.equal('1.23e+00');
+
+            dexp('e', 0.01, 4)
+                .should.equal('1.0000e-02');
+
+            dexp('e', 0.1234, 3)
+                .should.equal('1.234e-01');
+
+            dexp('e', 0.0019999, 3)
+                .should.equal('2.000e-03');
+
+            dexp('e', 0, 3)
+                .should.equal('0.000e+00');
+        });
+
+        it('correctly rounds numbers', function() {
+            dexp('E', 166, 1)
+                .should.equal('1.7E+02');
+
+            dexp('E', 9.999, 2)
+                .should.equal('1.00E+01');
+
+            dexp('E', 1.123, 2)
+                .should.equal('1.12E+00');
+        });
+
+        it('correctly handles negative numbers', function() {
+            dexp('e', -1234, 3)
+                .should.equal('-1.234e+03');
+
+            dexp('e', -0.0038847, 2)
+                .should.equal('-3.88e-03');
+        });
+
+        it('passes stress test', function() {
+            for (var i = 0; i < 1000; i += 1) {
+                var r = Math.random();
+
+                var expString = dexp('e', r, 16);
+                r.should.equal(Number(expString));
+            }
+        });
     });
 
 }());

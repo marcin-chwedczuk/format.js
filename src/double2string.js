@@ -367,15 +367,17 @@ exports.double2string = function(number, precision) {
     return sign + numberString;
 };
 
-exports.double2string2 = function(number, precision) {
+var getDouble2String2Digits = function(number, precision, options) {
     precision = (typeof(precision) === "undefined" ? 6 : precision);
 
     if (isNaN(number)) {
-        return 'NaN';
+        return { notFinite: 'NaN' };
     }
 
     if (!isFinite(number)) {
-        return (number > 0 ? 'Inf' : '-Inf');
+        return {
+            notFinite: (number > 0 ? 'Inf' : '-Inf')
+        };
     }
 
     var bits = double2bits(number);
@@ -419,11 +421,145 @@ exports.double2string2 = function(number, precision) {
     }
 
     if (divMod.mod.mul(TEN).divMod(s).div.isGreaterOrEqual(BigInt.of(5))) {
-        roundUp(integerDigits, fractionDigits);
+        if (!options || !options.dontRound) {
+            roundUp(integerDigits, fractionDigits);
+        }
     }
 
-    return (bits.sign ? '-' : '') + 
-        integerDigits.join('') + 
-        (fractionDigits.length ? '.' + fractionDigits.join('') : '');
+    return {
+        sign: bits.sign,
+        integerDigits: integerDigits,
+        fractionDigits: fractionDigits
+    };
+};
+
+exports.double2string2 = function(number, precision) {
+    var digits = getDouble2String2Digits(number, precision);
+
+    if (digits.notFinite) {
+        return digits.notFinite;
+    }
+
+    return (digits.sign ? '-' : '') + 
+        digits.integerDigits.join('') + 
+        (digits.fractionDigits.length ? '.' + digits.fractionDigits.join('') : '');
+};
+
+var log10 = function(n) {
+    return Math.log(n) * Math.LOG10E;
+};
+
+var zeroArray = function(length) {
+    var a = [];
+
+    while (a.length < length) {
+        a.push(0);
+    }
+
+    return a;
+};
+
+exports.double2string2exp = function(exponentString, number, precision) {
+    var leadingDigits, fractionDigits, sign, exponent;
+    var digits;
+
+    var options = { dontRound: true };
+
+    if (Math.abs(number) >= 1.0) {
+        // case 1: (number >= 1)
+        
+        var numberOfIntegerDigits = Math.floor(log10(Math.abs(number)));
+        
+        // if we have integer digits we need less fraction digits.
+        // one of integer digits will be before decimal dot
+        // 2233.55 -> 2.23355 so we subtract 1, 
+        var digitsAfterDotNeeded = Math.max(0, precision - (numberOfIntegerDigits - 1));
+
+        // to avoid rounding errors etc. we add one to precision
+        // (i cannot proof that previous compuation returns exact number of digits
+        // after dot)
+        digitsAfterDotNeeded += 1;
+
+        digits = getDouble2String2Digits(number, digitsAfterDotNeeded, options);
+
+        if (digits.notFinite) { return digits.notFinite; }
+
+        exponent = digits.integerDigits.length - 1;
+        
+        leadingDigits = [digits.integerDigits[0]];
+        fractionDigits = digits.integerDigits
+            .slice(1)
+            .concat(digits.fractionDigits);
+        sign = digits.sign;
+    }
+    else if (number === 0.0) {
+        sign = ((1/number) > 0 ? 0 : 1);
+        leadingDigits = [0];
+        fractionDigits = zeroArray(precision);
+        exponent = 0;
+    }
+    else {
+        // case 2: (number < 1)
+        var numberOfZerosBeforeFirstDigit = Math.floor(-log10(Math.abs(number)));
+
+        // +1 for number before dot e.g. 0.013344 -> 1.334400 (for precision 6 we need 7 digits),
+        // another +1 for rounding errors
+        var neededPrecision = numberOfZerosBeforeFirstDigit + 1 + precision + 1;
+
+        digits = getDouble2String2Digits(number, neededPrecision, options);
+        
+        if (digits.notFinite) { return digits.notFinite; }
+
+        sign = digits.sign;
+
+        // because of rounding errors we may end up with number 1
+        if (digits.integerDigits[0] === 1) {
+            exponent = 0;
+            leadingDigits = [1];
+            fractionDigits = zeroArray(precision);
+        }
+        else {
+            for (exponent = 0; exponent < digits.fractionDigits.length; exponent += 1) {
+                if (digits.fractionDigits[exponent] !== 0) {
+                    break;
+                }
+            }
+
+            fractionDigits = digits.fractionDigits.slice(exponent);
+            leadingDigits = [fractionDigits[0]];
+            fractionDigits.shift();
+
+            exponent = -exponent - 1;
+        }
+    }
+    
+    // when precision is limited we must round number
+    // e.g. 1.66 -> 1.7e+00
+    var needsRoundingUp =
+        (fractionDigits.length >= precision && fractionDigits[precision] >= 5);
+
+    fractionDigits = fractionDigits.slice(0, precision);
+    if (needsRoundingUp) {
+        roundUp(leadingDigits, fractionDigits);
+
+        // fix situation 9.999 -> 10.00 (precision: 2)
+        if (leadingDigits.length > 1) {
+            exponent += 1;
+
+            fractionDigits.unshift(leadingDigits[1]);
+            fractionDigits.pop();
+
+            leadingDigits = [leadingDigits[0]];
+        }
+    }
+
+    var exponentDigits = String(Math.abs(exponent));
+
+    return (sign ? '-' : '') +
+        leadingDigits.join('') + '.' +
+        fractionDigits.join('') +
+        exponentString +
+        (exponent < 0 ? '-' : '+') +
+        (exponentDigits.length < 2 ? '0' + exponentDigits : exponentDigits);
 };
 

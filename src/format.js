@@ -2,7 +2,10 @@
 
 'use strict';
 
-var _double2string = require('./double2string').double2string2;
+var d2sModule = require('./double2string.js');
+
+var _double2string = d2sModule.double2string2;
+var _double2stringExp = d2sModule.double2string2exp;
 
 var throwError = function(message) {
     throw new Error('format.js: ' + message);
@@ -219,8 +222,9 @@ var isPlusZero = function(n) {
 
 // produce number string without using E notation
 var numberToString = (function() {
-    var SCIENTIFIC_NOTATION_REGEX = /[Ee]/;
     var DEFAULT_PRECISION = 6;
+
+    var SCIENTIFIC_NOTATION_REGEX = /[Ee]/;
     var MAX_TO_FIXED_PRECISION = 20;
 
     return function(number, precision) {
@@ -235,17 +239,59 @@ var numberToString = (function() {
         
         if (precision <= MAX_TO_FIXED_PRECISION) {
             numberString = number.toFixed(precision);
-        }
         
-        // quick fix for -0 which is not handled properly by toFixed
-        if (number === 0 && isMinusZero(number)) {
-            numberString = '-' + numberString;
+            // quick fix for -0 which is not handled properly by toFixed
+            if ((number === 0) && isMinusZero(number)) {
+                numberString = '-' + numberString;
+            }
         }
-
 
         if (!numberString || SCIENTIFIC_NOTATION_REGEX.test(numberString)) {
             // use slow but accurate method to get number string
             numberString = _double2string(number, precision);
+        }
+
+        return numberString;
+    };
+}());
+
+var numberToScientificNotation = (function() {
+    var DEFAULT_PRECISION = 6;
+
+    var SCIENTIFIC_NOTATION_REGEX = /^(\d(?:\.\d*)?)[e|E]([+-]?)(\d+)$/;
+    var MAX_TO_EXPONENTIAL_PRECISION = 20;
+
+    return function(specifier, number, precision) {
+        precision = (precision === null ? DEFAULT_PRECISION : precision);
+
+        if (!isFinite(number)) {
+            return nonNumberToString(number);
+        }
+
+        var numberString = null;
+        
+        if (precision <= MAX_TO_EXPONENTIAL_PRECISION) {
+            numberString = number.toExponential(precision);
+        
+            // exponent should contain at least 2 digits, exponent should be preceded
+            // by sign:
+            // fix 1.32e3 -> 1.32e+03
+            numberString = numberString.replace(SCIENTIFIC_NOTATION_REGEX,
+                function(m, number, expSign, exp) {
+                    expSign = expSign || '+';
+                    exp = (exp.length < 2 ? '0' + exp : exp);
+
+                    var fixedNumberString = number + specifier + expSign + exp;
+                    return fixedNumberString;
+                });
+
+            // fix printing of -0
+            if ((number === 0) && isMinusZero(number)) {
+                numberString = '-' + numberString;
+            }
+        }
+        else {
+            numberString = _double2stringExp(specifier, number, precision);
         }
 
         return numberString;
@@ -310,6 +356,11 @@ var formatSpecifier = function(next, flags, width, precision, spec) {
         arg = next();
         result = numberToString(arg, precision);
         decoratorFunc = numberDecorator.bind(null, spec, arg, width);
+        break;
+
+    case 'e': case 'E':
+        arg = next();
+        result = numberToScientificNotation(spec, arg, precision);
         break;
 
     case '%':

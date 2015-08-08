@@ -416,6 +416,50 @@
                 format('[%04.2f]', 33445.43)
                     .should.equal('[33445.43]');
             });
+
+            it('given minus zero and precision > 20, prints minus sign', function() {
+                format('[%.25f]', -0)
+                    .should.equal('[-0.0000000000000000000000000]');
+            });
+        });
+
+        describe('%e and %E specifiers', function() {
+            it('prints number in scientific notation', function() {
+                // default precision is 6
+                
+                format('[%e]', 1.23456)
+                    .should.equal('[1.234560e+00]');
+
+                format('[%e]', 123456)
+                    .should.equal('[1.234560e+05]');
+
+                format('[%e]', 0.000123456)
+                    .should.equal('[1.234560e-04]');
+
+                format('[%E]', 33445)
+                    .should.equal('[3.344500E+04]');
+
+                format('[%E]', 0.001)
+                    .should.equal('[1.000000E-03]');
+            });
+
+            it('correctly handles zeros', function() {
+                format('[%e]', 0)
+                    .should.equal('[0.000000e+00]');
+
+                format('[%e]', -0)
+                    .should.equal('[-0.000000e+00]');
+            });
+
+            describe('precision', function() {
+                it('can be set to arbitrary large number', function() {
+                    format('[%.25e]', Math.PI)
+                        .should.equal('[3.1415926535897931159979635e+00]');
+
+                    format('[%.30e]', 1)
+                        .should.equal('[1.000000000000000000000000000000e+00]');
+                });
+            });
         });
 
         describe('width specifier', function() {
