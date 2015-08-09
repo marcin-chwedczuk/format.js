@@ -590,6 +590,24 @@
             });
         });
 
+        describe('g and G specifiers', function() {
+            it('g - uses the shortest representation of e or f', function() {
+                format('[%g]', 123)
+                    .should.equal('[123.000000]');
+                
+                format('[%g]', 123000000)
+                    .should.equal('[1.230000e+08]');
+            });
+
+            it('G - uses the shortest representation of E or F', function() {
+                format('[%G]', 123)
+                    .should.equal('[123.000000]');
+                
+                format('[%G]', 123000000)
+                    .should.equal('[1.230000E+08]');
+            });
+        });
+
         describe('width specifier', function() {
             it('specifies minimum field width (too short fields are padded ' + 
                'with spaces on the right)', function() {

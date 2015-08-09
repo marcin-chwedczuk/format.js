@@ -371,6 +371,19 @@ var formatSpecifier = function(next, flags, width, precision, spec) {
         decoratorFunc = numberDecorator.bind(null, spec, arg, width);
         break;
 
+    case 'g': case 'G':
+        arg = next();
+        var fResult = numberToString(arg, precision);
+        var eResult = numberToScientificNotation((spec === 'g' ? 'e' : 'E'), arg, precision);
+
+        var shorter = (fResult.length <= eResult.length ? 'f' : 'e');
+
+        result = (shorter === 'f' ? fResult : eResult);
+        spec = (spec === 'g' ? shorter : shorter.toUpperCase());
+        
+        decoratorFunc = numberDecorator.bind(null, spec, arg, width);
+        break;
+
     case '%':
         return '%';
 
