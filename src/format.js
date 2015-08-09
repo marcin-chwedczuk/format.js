@@ -95,10 +95,11 @@ var numberDecorator = function(options, number, width, formatted, flags) {
     var isHexNumber = isLowercaseHex || isUppercaseHex;
     var isOctNumber = hasFlag(options, 'o');
     var isUnsigned = hasAnyFlag(options, 'x', 'X', 'u', 'o');
+    var isScientificNotation = hasAnyFlag(options, 'e', 'E');
     var isFloatingPoint = hasAnyFlag(options, 'f', 'F');
 
     if (hasFlag(flags, '+') && !isUnsigned) {
-        if (isFloatingPoint) {
+        if (isFloatingPoint || isScientificNotation) {
             if (number > 0 || isPlusZero(number)) {
                 formatted = '+' + formatted;
             }
@@ -137,6 +138,12 @@ var numberDecorator = function(options, number, width, formatted, flags) {
         else if (isFloatingPoint) {
             if (formatted.indexOf('.') === (-1)) {
                 formatted = formatted + '.';
+            }
+        }
+        else if (isScientificNotation) {
+            if (formatted.indexOf('.') === (-1)) {
+                var indexOfE = formatted.search(/[Ee]/);
+                formatted = formatted.slice(0, indexOfE) + '.' + formatted.slice(indexOfE);
             }
         }
     }
@@ -258,7 +265,7 @@ var numberToString = (function() {
 var numberToScientificNotation = (function() {
     var DEFAULT_PRECISION = 6;
 
-    var SCIENTIFIC_NOTATION_REGEX = /^(\d(?:\.\d*)?)[e|E]([+-]?)(\d+)$/;
+    var SCIENTIFIC_NOTATION_REGEX = /^([+-]?\d(?:\.\d*)?)[e|E]([+-]?)(\d+)$/;
     var MAX_TO_EXPONENTIAL_PRECISION = 20;
 
     return function(specifier, number, precision) {
@@ -361,6 +368,7 @@ var formatSpecifier = function(next, flags, width, precision, spec) {
     case 'e': case 'E':
         arg = next();
         result = numberToScientificNotation(spec, arg, precision);
+        decoratorFunc = numberDecorator.bind(null, spec, arg, width);
         break;
 
     case '%':

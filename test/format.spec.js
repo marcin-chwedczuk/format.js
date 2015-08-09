@@ -451,6 +451,17 @@
                     .should.equal('[-0.000000e+00]');
             });
 
+            it('correctly handles non numbers', function() {
+                format('[%e]', Number.POSITIVE_INFINITY)
+                    .should.equal('[Infinity]');
+
+                format('[%e]', Number.NEGATIVE_INFINITY)
+                    .should.equal('[-Infinity]');
+
+                format('[%e]', Number.NaN)
+                    .should.equal('[NaN]');
+            });
+
             describe('precision', function() {
                 it('can be set to arbitrary large number', function() {
                     format('[%.25e]', Math.PI)
@@ -459,6 +470,123 @@
                     format('[%.30e]', 1)
                         .should.equal('[1.000000000000000000000000000000e+00]');
                 });
+
+                it('can be set to zero', function() {
+                    format('[%.0e]', 31.112233)
+                        .should.equal('[3e+01]');
+
+                    format('[%.0e]', 0.00321)
+                        .should.equal('[3e-03]');
+
+                    format('[%.0e]', 56)
+                        .should.equal('[6e+01]');
+
+                    format('[%.0e]', -0.9)
+                        .should.equal('[-9e-01]');
+                });
+
+                it('can be set from preceding argument', function() {
+                    format('[%.*e]', 3, 1024.4455)
+                        .should.equal('[1.024e+03]');
+
+                    format('[%.*e]', 0, -0.003344)
+                        .should.equal('[-3e-03]');
+                });
+
+                it('can be set to arbitrary number', function() {
+                    format('[%.2e]', 1.23456)
+                        .should.equal('[1.23e+00]');
+
+                    format('[%.2e]', -0.0543)
+                        .should.equal('[-5.43e-02]');
+
+                    format('[%.3e]', 1103474)
+                        .should.equal('[1.103e+06]');
+
+                    format('[%.1e]', 1.994)
+                        .should.equal('[2.0e+00]');
+                });
+            });
+
+            it('correctly handles width', function() {
+                format('[%12.3e]', 1.2346)
+                    .should.equal('[   1.235e+00]');
+
+                format('[%3.2e]', 2.222)
+                    .should.equal('[2.22e+00]');
+
+                format('[%16e]', 33.123456)
+                    .should.equal('[    3.312346e+01]');
+            });
+
+            it('supports minus flag', function() {
+                format('[%-20.4e]', 5.334433)
+                    .should.equal('[5.3344e+00          ]');
+
+                format('[%-4.2e]', 4.432)
+                    .should.equal('[4.43e+00]');
+            });
+
+            it('supports plus flag', function() {
+                format('[%+e]', 0)
+                    .should.equal('[+0.000000e+00]');
+
+                format('[%+e]', -0)
+                    .should.equal('[-0.000000e+00]');
+
+                format('[%+.0e]', 32)
+                    .should.equal('[+3e+01]');
+
+                format('[%+.0e]', -33)
+                    .should.equal('[-3e+01]');
+            });
+
+            it('supports space flag', function() {
+                format('[% .2e]', 334)
+                    .should.equal('[ 3.34e+02]');
+
+                format('[% e]', 0)
+                    .should.equal('[ 0.000000e+00]');
+
+                format('[% e]', -32)
+                    .should.equal('[-3.200000e+01]');
+
+                format('[% e]', -0)
+                    .should.equal('[-0.000000e+00]');
+            });
+        
+            it('supports # flag (always write decimal point)', function() {
+                format('[%#e]', 3)
+                    .should.equal('[3.000000e+00]');
+
+                format('[%#e]', -4.44)
+                    .should.equal('[-4.440000e+00]');
+
+                format('[%#.0e]', 2)
+                    .should.equal('[2.e+00]');
+
+                format('[%#.0e]', -3)
+                    .should.equal('[-3.e+00]');
+
+                format('[%#.0e]', 0)
+                    .should.equal('[0.e+00]');
+            });
+        
+            it('supports zero flag (pad with zeros when width specified)', function() {
+                format('[%0e]', 3)
+                    .should.equal('[3.000000e+00]');
+
+                format('[%0e]', -4.2)
+                    .should.equal('[-4.200000e+00]');
+
+                format('[%010.2e]', 8.32)
+                    .should.equal('[008.32e+00]');
+
+                format('[%011.2e]', -1.78)
+                    .should.equal('[-001.78e+00]');
+
+                format('[%04.6e]', 33445.43)
+                    .should.equal('[3.344543e+04]');
             });
         });
 
