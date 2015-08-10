@@ -608,6 +608,37 @@
             });
         });
 
+        describe('c specifier', function() {
+            it('given string prints string first character', function() {
+                format('[%c]', 'abc')
+                    .should.equal('[a]');
+
+                format('[%c]', '345')
+                    .should.equal('[3]');
+            });
+
+            it('given empty string prints nothing', function() {
+                format('[%c]', '')
+                    .should.equal('[]');
+            });
+
+            it('given number converts number to character and prints that character', function() {
+                format('[%c]', 120)
+                    .should.equal('[x]');
+
+                format('[%c]', 120.69)
+                    .should.equal('[x]');
+            });
+
+            it('supports width field and minus flag', function() {
+                format('[%8c]', 'a')
+                    .should.equal('[       a]');
+
+                format('[%-8c]', 'c')
+                    .should.equal('[c       ]');
+            });
+        });
+
         describe('width specifier', function() {
             it('specifies minimum field width (too short fields are padded ' + 
                'with spaces on the right)', function() {

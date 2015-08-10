@@ -305,6 +305,23 @@ var numberToScientificNotation = (function() {
     };
 }());
 
+var toCharacterString = function(arg) {
+    if (typeof(arg) === "string") {
+        if (arg) {
+            return arg.charAt(0);
+        }
+        else {
+            return '';
+        }
+    }
+    else if (typeof(arg) === "number") {
+        return String.fromCharCode(arg);
+    }
+    else {
+        return '?';
+    }
+};
+
 var formatSpecifier = function(next, flags, width, precision, spec) {
     var arg, 
         result,
@@ -323,6 +340,10 @@ var formatSpecifier = function(next, flags, width, precision, spec) {
     case 's':
         result = String(next());
         precisionFunc = numberOfCharsPrecision;
+        break;
+
+    case 'c':
+        result = toCharacterString(next());
         break;
     
     case 'v':
