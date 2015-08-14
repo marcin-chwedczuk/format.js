@@ -1,4 +1,4 @@
-/*jshint browserify:true */
+/*jshint browserify:true, bitwise:false */
 'use strict';
 
 var isSpace = function(c) {
@@ -97,6 +97,15 @@ InputIterator.prototype.matchRegex = function(regex, maxWidth) {
     }
 };
 
+InputIterator.prototype.startsWith = function(regex) {
+    if (this._ended()) {
+        return false;
+    }
+
+    var result = regex.test(this.input.substring(this.position));
+    return result;
+};
+
 InputIterator.prototype.toString = function() {
     if (this._ended()) {
         return '<<EOF>>';
@@ -145,6 +154,35 @@ var parseArg = function(spec, width, name, input, result) {
 
     case 's':
         value = input.matchRegex(/^\S*/, width);
+        break;
+
+    case 'i': case 'd': case 'u':
+        if ((spec === 'i') && input.startsWith(/^[-+]?0x|0X/)) {
+            // hex number
+            value = input.matchRegex(/^[-+]?(0x|0X)[a-fA-F0-9]+/, width);
+            value =  parseInt(value, 16);
+            break;
+        }
+        else if ((spec === 'i') && input.startsWith(/^[-+]?0/)) {
+            // oct number
+            value = input.matchRegex(/^[-+]?0[0-7]+/, width);
+
+            if (value === '-0' || value === '+0' || value === '0') {
+                value = NaN;
+            }
+            else {
+                value = parseInt(value, 8);
+            }
+            break;
+        }
+        else {
+            value = input.matchRegex(/^[+-]?\d+/, width);
+            value = parseInt(value, 10);
+
+            if ((spec === 'u') && isFinite(value)) {
+                value = (value >>> 0);
+            }
+        }
         break;
 
     default:
