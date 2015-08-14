@@ -9,12 +9,12 @@ var isSpace = function(c) {
 var InputIterator = function(input) {
     this.input = input;
 
-    this.current = 0;
+    this.position = 0;
     this.length = input.length;
 };
 
 InputIterator.prototype._ended = function() {
-    return (this.current >= this.length);
+    return (this.position >= this.length);
 };
 
 InputIterator.prototype._current = function() {
@@ -22,16 +22,16 @@ InputIterator.prototype._current = function() {
         return '';
     }
 
-    return this.input[this.current];
+    return this.input[this.position];
 };
 
 InputIterator.prototype._next = function() {
-    this.current += 1;
+    this.position += 1;
 };
 
 InputIterator.prototype._setMismatch = function() {
     // don't parse rest of input on character mismatch
-    this.current = this.length;
+    this.position = this.length;
 };
 
 InputIterator.prototype.match = function(s) {
@@ -72,21 +72,101 @@ InputIterator.prototype.matchExactly = function(c) {
     }
 };
 
-var parseArg = function(match, input, result) {
-    throw new Error('not impl!');   
+InputIterator.prototype.matchRegex = function(regex, maxWidth) {
+    if (this._ended()) {
+        return null;
+    }
+
+    var m = regex.exec(this.input.substring(this.position));
+    var matchText;
+
+    if (m === null) {
+        this._setMismatch();
+        return null;
+    }
+    else {
+        matchText = m[0];
+
+        if (maxWidth !== null) {
+            maxWidth = Math.min(maxWidth, matchText.length);
+            matchText = matchText.substring(0, maxWidth);
+        } 
+
+        this.position += matchText.length;
+        return matchText;
+    }
+};
+
+InputIterator.prototype.toString = function() {
+    if (this._ended()) {
+        return '<<EOF>>';
+    }
+    else {
+        return this.input.substring(this.index);
+    }
+};
+
+var addResult = function(result, name, value) {
+    if (name !== undefined) {
+        result.named = (result.named || {});
+
+        var propertyNames = name.split('.');
+        var obj = result.named;
+
+        // for path property names like foo.bar.nyu
+        // traverse result object tree and create objects when
+        // necessary
+        for (var i = 0; i < propertyNames.length - 1; i += 1) {
+            obj = obj[propertyNames[i]] = (obj[propertyNames[i]] || {});
+        }
+        obj[propertyNames[propertyNames.length-1]] = value;
+    }
+    else {
+        result.positional = (result.positional || []);
+        result.positional.push(value);
+    }
+};
+
+var parseArg = function(spec, width, name, input, result) {
+    var skip, value;
+
+    skip = (width === '*');
+    
+    width = ( (!width || (width === '*')) ? null : Number(width) );
+    if (width === 0) {
+        // sscanf behaviour
+        width = null;
+    }
+
+    switch (spec) {
+    case '%':
+        input.matchExactly('%');
+        break;
+
+    case 's':
+        value = input.matchRegex(/^\S*/, width);
+        break;
+
+    default:
+        throw new Error('scan: unknown specifier: ' + spec);
+    }
+
+    if (!skip) {
+        addResult(result, name, value, skip);
+    }
 };
 
 exports.scan = (function() {
     // %{name}10s or %d or %*d
-    var ARG_REGEX = /^%(?:\{([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\})?(\*|\d+)?([a-z%])/g;
+    var ARG_REGEX = /%(?:\{([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\})?(\*|\d+)?([a-z%])/g;
 
     return function(input, format) {
         if (typeof(input) !== 'string') {
-            throw new TypeError('argument "input" must be a string');
+            throw new TypeError('scan: argument "input" must be a string');
         }
 
         if (typeof(format) !== 'string') {
-            throw new TypeError('argument "format" must be a string');
+            throw new TypeError('scan: argument "format" must be a string');
         }
 
         input = new InputIterator(input);
@@ -97,10 +177,16 @@ exports.scan = (function() {
             named: null
         };
 
+        var width, spec, name;
+
         ARG_REGEX.lastIndex = 0;
         while ((match = ARG_REGEX.exec(format)) !== null) {
             input.match(format.substring(prevMatchEnd, match.index));
-            parseArg(match, input, result);
+
+            width = match[2];
+            spec = match[3];
+            name = match[1];
+            parseArg(spec, width, name, input, result);
 
             prevMatchEnd = match.index + match[0].length;
         }
