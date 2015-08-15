@@ -191,6 +191,29 @@ var parseArg = function(spec, width, name, input, result) {
 
         break;
 
+    case 'f':
+    case 'e':
+    case 'g':
+        if (input.startsWith(/^([-+]?Infinity|NaN)/i)) {
+            value = input.matchRegex(/^([-+]?Infinity|NaN)/i, width);
+            value = value.toLowerCase();
+            
+            if (value === 'nan') {
+                value = Number.NaN;
+            }
+            else if (value === '+infinity' || value === 'infinity') {
+                value = Number.POSITIVE_INFINITY;
+            }
+            else  {
+                value = Number.NEGATIVE_INFINITY;
+            }
+        }
+        else {
+            value = input.matchRegex(/^[-+]?\d+(\.\d*)?((e|E)[-+]?\d+)?/, width);
+            value = parseFloat(value);
+        }
+        break;
+
     default:
         throw new Error('scan: unknown specifier: ' + spec);
     }

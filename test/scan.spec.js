@@ -339,6 +339,77 @@
             });
         });
 
+        describe('%f %e %g specifiers', function() {
+            it('allows to read floating point number', function() {
+                scan('1435', '%f')
+                    .should.eql([1435]);
+
+                scan('3.3245', '%f')
+                    .should.eql([3.3245]);
+
+                scan('3.23e+05', '%f')
+                    .should.eql([3.23e+5]);
+
+                scan('-34.54', '%f')
+                    .should.eql([-34.54]);
+
+                scan('-3.43e-8', '%f')
+                    .should.eql([-3.43e-8]);
+
+                scan('0 -0', '%f %f')
+                    .should.eql([0, -0]);
+            });
+
+            it('allows to read special values: Infinity and NaN', function() {
+                scan('Infinity', '%f')
+                    .should.eql([Infinity]);
+
+                scan('+Infinity', '%f')
+                    .should.eql([Infinity]);
+
+                scan('-Infinity', '%f')
+                    .should.eql([-Infinity]);
+
+                scan('NaN', '%f')
+                    .should.eql([NaN]);
+            });
+
+            it('returns NaN if cannot parse number', function() {
+                scan('fcde.bbd', '%f')
+                    .should.eql([NaN]);
+
+                scan('', '%f')
+                    .should.eql([NaN]);
+            });
+
+            it('supports field width', function() {
+                scan('11.54', '%2f')
+                    .should.eql([11]);
+
+                scan('11.54', '%4f')
+                    .should.eql([11.5]);
+
+                scan('11.54 f', '%10f')
+                    .should.eql([11.54]);
+
+                scan('-32.3', '%1f')
+                    .should.eql([NaN]);
+
+                scan('-334.432e3', '%4f')
+                    .should.eql([-334]);
+            });
+
+            it('allows to omit parsed value from results', function() {
+                scan('3.32 1e10 5e2', '%f %*f %f')
+                    .should.eql([3.32, 5.0e2]);
+            });
+
+            it('supports named arguments', function() {
+                scan('0.32 0.21', '%{x}f %{y}f')
+                    .should.eql({ x:0.32, y:0.21 });
+            });
+        });
+
         it('returns null for arguments that cannot be match', function() {
             scan('a b', '%s %s %s %s')
                 .should.eql(['a', 'b', null, null]);
