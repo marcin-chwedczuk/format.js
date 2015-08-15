@@ -136,6 +136,61 @@ var addResult = function(result, name, value) {
     }
 };
 
+var scansetToRegex = (function() {
+    var ASCII_CODE = {
+        DIGIT_ZERO: '0'.charCodeAt(0),
+        DIGIT_NINE: '9'.charCodeAt(0),
+        SMALL_A: 'a'.charCodeAt(0),
+        SMALL_Z: 'z'.charCodeAt(0),
+        CAPITAL_A: 'A'.charCodeAt(0),
+        CAPITAL_Z: 'Z'.charCodeAt(0)
+    };
+
+    var isSafe = function(c) {
+        var code = c.charCodeAt(0);
+
+        return (ASCII_CODE.DIGIT_ZERO <= code && code <= ASCII_CODE.DIGIT_NINE) ||
+            (ASCII_CODE.SMALL_A <= code && code <= ASCII_CODE.SMALL_Z) ||
+            (ASCII_CODE.CAPITAL_A <= code && code <= ASCII_CODE.CAPITAL_Z);
+    };
+
+    // convert char -> \uXXXX form
+    var encode = function(c) {
+        c = '0000' + c.charCodeAt(0).toString(16);
+        return ('\\u' + c.slice(-4));
+    };
+
+    return function(scanset) {
+        // remove [ and ] from ends of scanset
+        scanset = scanset.slice(1, -1);
+        
+        var encoded = '';
+        var position = 0;
+
+        if (scanset[0] === '^') {
+            // don't escape negation
+            encoded += '^';
+            position += 1;
+        }
+
+        for (; position < scanset.length; position += 1) {
+            if (scanset[position] === '-') {
+                // don't escape -
+                encoded += '-';
+            }
+            else if (isSafe(scanset[position])) {
+                // don't encode safe characters like letters
+                encoded += scanset[position];
+            }
+            else {
+                encoded += encode(scanset[position]);
+            }
+        }
+
+        return new RegExp('^[' + encoded + ']+');
+    };
+}());
+
 var parseArg = function(spec, width, name, input, result) {
     var skip, value, regex;
 
@@ -215,7 +270,14 @@ var parseArg = function(spec, width, name, input, result) {
         break;
 
     default:
-        throw new Error('scan: unknown specifier: ' + spec);
+        if (spec.length === 1) {
+            throw new Error('scan: unknown specifier: ' + spec);
+        }
+        else {
+            // scanset: %3[rwx]
+            regex = scansetToRegex(spec);
+            value = input.matchRegex(regex, width);
+        }
     }
 
     if (!skip) {
@@ -224,8 +286,8 @@ var parseArg = function(spec, width, name, input, result) {
 };
 
 exports.scan = (function() {
-    // %{name}10s or %d or %*d
-    var ARG_REGEX = /%(?:\{([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\})?(\*|\d+)?([a-z%])/g;
+    // %{name}10s or %d or %*d or %[rwx]
+    var ARG_REGEX = /%(?:\{([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\})?(\*|\d+)?([a-z%]|\[[^\]]+\])/g;
 
     return function(input, format) {
         if (typeof(input) !== 'string') {

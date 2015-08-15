@@ -410,6 +410,74 @@
             });
         });
 
+        describe('charset specifier ([xxx] or [^xxx])', function() {
+            it('allows to read sequence of charset characters', function() {
+                scan('rw-', '%[rwx-]')
+                    .should.eql(['rw-']);
+
+                scan('r-x dir date', '%[rwx-]')
+                    .should.eql(['r-x']);
+
+                scan('abgtaF', '%[abgt]')
+                    .should.eql(['abgta']);
+
+                scan('.-..-.foozble', '%[-.]')
+                    .should.eql(['.-..-.']);
+
+                scan('($$^^$$).foo', '%[()$^]')
+                    .should.eql(['($$^^$$)']);
+
+                scan('\\//\\//c', '%[\\/]')
+                    .should.eql(['\\//\\//']);
+            });
+
+            it('allows to read sequence of charset characters negation', function() {
+                scan('837%$*#a83428', '%[^a]')
+                    .should.eql(['837%$*#']);
+
+                scan('54^55^55', '%[^^]')
+                    .should.eql(['54']);
+
+                scan('abdc34', '%[^0123456789]')
+                    .should.eql(['abdc']);
+            });
+
+            it('supports ranges in charset', function() {
+                scan('foozble3', '%[a-z]')
+                    .should.eql(['foozble']);
+
+                scan('33857.832', '%[0-9]')
+                    .should.eql(['33857']);
+
+                scan('foo333bar', '%[^0-9]')
+                    .should.eql(['foo']);
+            });
+      
+            it('supports field width', function() {
+                scan('abcdbcd', '%3[a-f]')
+                    .should.eql(['abc']);
+
+                scan('ffda', '%10[a-f]')
+                    .should.eql(['ffda']);
+
+                scan('932', '%1[0-9]')
+                    .should.eql(['9']);
+
+                scan('abcd9', '%1[^0-9]')
+                    .should.eql(['a']);
+            });
+
+            it('allows to omit parsed value from results', function() {
+                scan('32 88 97', '%[0-9] %*[0-9] %[0-9]')
+                    .should.eql(['32', '97']);
+            });
+
+            it('supports named arguments', function() {
+                scan('rwx scd', '%{x}[a-z] %{y}[a-z]')
+                    .should.eql({ x:'rwx', y:'scd' });
+            });
+         });
+
         it('returns null for arguments that cannot be match', function() {
             scan('a b', '%s %s %s %s')
                 .should.eql(['a', 'b', null, null]);
