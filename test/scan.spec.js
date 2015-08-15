@@ -7,6 +7,8 @@
 
     var scan = require('../src/scan.js').scan;
 
+    var oct = function(n) { return parseInt(n, 8); };
+
     describe('scan()', function() {
         describe('%s specifier', function() {
             it('reads sequence of non-whitespace characters', function() {
@@ -152,6 +154,118 @@
             });
         });
 
+        describe('%x specifier', function() {
+            it('allows to read hex number with optional sign', function() {
+                scan('0x123', '%x')
+                    .should.eql([0x123]);
+
+                scan('0XBAD5', '%x')
+                    .should.eql([0xbad5]);
+
+                scan('+0x4a4', '%x')
+                    .should.eql([0x4a4]);
+
+                scan('0x0', '%x')
+                    .should.eql([0]);
+
+                // %x returns unsigned number
+                scan('-0x32f', '%x')
+                    .should.eql([4294966481]);
+            });
+
+            it('allows to read hex number without 0x prefix', function() {
+                scan('cafe', '%x')
+                    .should.eql([0xcafe]);
+
+                scan('babe', '%x')
+                    .should.eql([0xbabe]);
+
+                // %x returns unsigned number
+                scan('-1', '%x')
+                    .should.eql([0xffffffff]);
+
+                scan('223', '%x')
+                    .should.eql([0x223]);
+            });
+
+            it('returns NaN if cannot parse number', function() {
+                scan('zoo bar', '%x')
+                    .should.eql([NaN]);
+            });
+
+            it('supports field width', function() {
+                scan('0x123', '%3x')
+                    .should.eql([1]);
+
+                // %x - returns unsigned numbers
+                scan('-0x103', '%4x')
+                    .should.eql([0xffffffff]);
+
+                scan('-0x34', '%3x')
+                    .should.eql([NaN]);
+            });
+
+            it('allows to omit parsed value from results', function() {
+                scan('0xff 0xcc 0xdd', '%x %*x %x')
+                    .should.eql([0xff, 0xdd]);
+            });
+
+            it('supports named arguments', function() {
+                scan('0x55 0x57', '%{x}x %{y}x')
+                    .should.eql({ x:0x55, y:0x57 });
+            });
+        });
+
+        describe('%o specifier', function() {
+            it('allows to read octal number with optional sign', function() {
+                scan('0123', '%o')
+                    .should.eql([oct('123')]);
+
+                scan('+044', '%o')
+                    .should.eql([oct('44')]);
+
+                scan('0', '%o')
+                    .should.eql([0]);
+
+                // %o returns unsigned number
+                scan('-032', '%o')
+                    .should.eql([4294967270]);
+            });
+
+            it('allows to read octal number without zero prefix', function() {
+                scan('77', '%o')
+                    .should.eql([oct('77')]);
+
+                // %o returns unsigned number
+                scan('-12', '%o')
+                    .should.eql([4294967286]);
+            });
+
+            it('returns NaN if cannot parse number', function() {
+                scan('foo bar', '%o')
+                    .should.eql([NaN]);
+            });
+
+            it('supports field width', function() {
+                scan('123', '%2o')
+                    .should.eql([oct('12')]);
+
+                scan('-10', '%1o')
+                    .should.eql([NaN]);
+            });
+
+            it('allows to omit parsed value from results', function() {
+                scan('223 7', '%*o %o')
+                    .should.eql([7]);
+            });
+
+            it('supports named arguments', function() {
+                scan('55 57', '%{x}o %{y}o')
+                    .should.eql({ x:oct('55'), y:oct('57') });
+            });
+        });
+
+
         describe('%i specifier', function() {
             it('allows to read hex number', function() {
                 scan('0xff', '%i')
@@ -177,9 +291,18 @@
                     .should.eql([parseInt('-234',8)]);
             });
 
+            it('allows to read zero and minus zero', function() {
+                scan('0', '%i')
+                    .should.eql([0]);
+
+                scan('-0', '%i')
+                    .should.eql([-0]);
+            });
+
             it('returns NaN if cannot parse number', function() {
+                // ambiguity between dec 0 and invalid oct number
                 scan('0zz', '%i')
-                    .should.eql([NaN]);
+                    .should.eql([0]);
 
                 scan('-089', '%i')
                     .should.eql([NaN]);

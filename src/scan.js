@@ -137,7 +137,7 @@ var addResult = function(result, name, value) {
 };
 
 var parseArg = function(spec, width, name, input, result) {
-    var skip, value;
+    var skip, value, regex;
 
     skip = (width === '*');
     
@@ -156,33 +156,39 @@ var parseArg = function(spec, width, name, input, result) {
         value = input.matchRegex(/^\S*/, width);
         break;
 
-    case 'i': case 'd': case 'u':
-        if ((spec === 'i') && input.startsWith(/^[-+]?0x|0X/)) {
+    case 'i': 
+    case 'd':
+    case 'u':
+    case 'x':
+    case 'o':
+        if ((spec === 'x') || ((spec === 'i') && input.startsWith(/^[-+]?0x|0X/))) {
             // hex number
-            value = input.matchRegex(/^[-+]?(0x|0X)[a-fA-F0-9]+/, width);
-            value =  parseInt(value, 16);
-            break;
-        }
-        else if ((spec === 'i') && input.startsWith(/^[-+]?0/)) {
-            // oct number
-            value = input.matchRegex(/^[-+]?0[0-7]+/, width);
+            regex = (spec === 'i' ? 
+                     /^[-+]?(0x|0X)[a-fA-F0-9]+/ : 
+                     /^[-+]?(0x|0X)?[a-fA-F0-9]+/);
 
-            if (value === '-0' || value === '+0' || value === '0') {
-                value = NaN;
-            }
-            else {
-                value = parseInt(value, 8);
-            }
-            break;
+            value = input.matchRegex(regex, width);
+            value =  parseInt(value, 16);
+        }
+        else if ((spec === 'o') || ((spec === 'i') && input.startsWith(/^[-+]?0\d/))) {
+            // oct number
+            regex = (spec === 'i' ? 
+                     /^[-+]?0[0-7]+/ : 
+                     /^[-+]?0?[0-7]+/);
+
+            value = input.matchRegex(regex, width);
+            value = parseInt(value, 8);
         }
         else {
             value = input.matchRegex(/^[+-]?\d+/, width);
             value = parseInt(value, 10);
-
-            if ((spec === 'u') && isFinite(value)) {
-                value = (value >>> 0);
-            }
         }
+        
+        if ((spec !== 'i' && spec !== 'd') && isFinite(value)) {
+            // convert to unsigned
+            value = (value >>> 0);
+        }
+
         break;
 
     default:
