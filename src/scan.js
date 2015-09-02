@@ -211,6 +211,11 @@ var parseArg = function(spec, width, name, input, result) {
         value = input.matchRegex(/^\S*/, width);
         break;
 
+    case 'c':
+        // in js regex (.) doesn't match new lines
+        value = input.matchRegex(/^[\s\S]*/, width || 1);
+        break;
+
     case 'i': 
     case 'd':
     case 'u':

@@ -265,7 +265,6 @@
             });
         });
 
-
         describe('%i specifier', function() {
             it('allows to read hex number', function() {
                 scan('0xff', '%i')
@@ -477,6 +476,70 @@
                     .should.eql({ x:'rwx', y:'scd' });
             });
          });
+
+        describe('%c specifier', function() {
+             it('reads exactly one character when width is not specified', function() {
+                scan('abc', '%c')
+                    .should.eql(['a']);
+
+                scan('a b', '%c%c%c')
+                    .should.eql(['a', ' ', 'b']);
+
+                scan('a b', '%c %c')
+                    .should.eql(['a', 'b']);
+
+                scan('', '%c')
+                    .should.eql([null]);
+            });
+
+            it('reads number of characters specified as width', function() {
+                scan('abc', '%3c')
+                    .should.eql(['abc']);
+
+                scan('ab c', '%4c')
+                    .should.eql(['ab c']);
+
+                scan('a bx c', '%3c')
+                    .should.eql(['a b']);
+
+                scan('foo', '%10c')
+                    .should.eql(['foo']);
+
+                scan('foo\n', '%10c')
+                    .should.eql(['foo\n']);
+            });
+
+            it('allows to omit parsed value from results', function() {
+                scan('foz', '%c %*c %c')
+                    .should.eql(['f', 'z']);
+
+                (scan('abc', '%*c %*c %*c') === null)
+                    .should.equal(true);
+            });
+
+            it('supports named arguments', function() {
+                scan('foo', '%{name}co%{nick}c')
+                    .should.eql({ name:'f', nick:'o' });
+
+                scan('bobie', '%{nameA}c %*c %{nameB}2c')
+                    .should.eql({ nameA:'b', nameB:'bi' });
+
+                scan('foo', '%{user.id}4c')
+                    .should.eql({
+                        user: {
+                            id: 'foo'
+                        }
+                    });
+
+                scan('foo bar', '%{user.id}2c%{user.token}2c')
+                    .should.eql({
+                        user: {
+                            id: 'fo',
+                            token: 'o '
+                        }
+                    });
+            });       
+        });
 
         it('returns null for arguments that cannot be match', function() {
             scan('a b', '%s %s %s %s')
