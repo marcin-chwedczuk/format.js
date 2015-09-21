@@ -5,7 +5,7 @@
     // var expect = chai.expect;
     chai.should();
 
-    var BigInt = require('../src/bigint.js').BigInt;
+    var BigInt = require('../lib/bigint.js').BigInt;
 
     var rand = function(max) {
         return Math.floor(Math.random() * max);

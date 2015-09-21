@@ -5,7 +5,7 @@
     var expect = chai.expect;
     chai.should();
 
-    var format = require('../src/format.js').format;
+    var format = require('../lib/format.js').format;
 
     var constFn = function(constant) {
         return function() {

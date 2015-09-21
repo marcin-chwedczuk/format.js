@@ -43,7 +43,7 @@
     });
 
     gulp.task('browserify', function() {
-        var b = browserify(['./src/exports.js'], { 
+        var b = browserify(['index.js'], { 
             debug: true,
             standalone: USER_LIBRARY_NAME
         });

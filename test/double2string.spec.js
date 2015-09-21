@@ -7,8 +7,8 @@
     // var expect = chai.expect;
     chai.should();
 
-    var module = require('../src/double2string.js');
-    var BigInt = require('../src/bigint.js').BigInt;
+    var module = require('../lib/double2string.js');
+    var BigInt = require('../lib/bigint.js').BigInt;
 
     module.BigInt = BigInt;
 

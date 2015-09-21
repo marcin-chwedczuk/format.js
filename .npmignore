@@ -1,0 +1,10 @@
+
+# ignore nodejs modules
+node_modules/
+
+# ignore dist directory
+dist/
+
+# ignore doc directory
+doc/
+
